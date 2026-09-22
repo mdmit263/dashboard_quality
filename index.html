@@ -179,8 +179,10 @@ svg{display:block; overflow:visible; font-family:inherit;}
 }
 :root[data-theme="dark"] .tooltip, @media (prefers-color-scheme:dark){.tooltip{}}
 .tooltip b{display:block; margin-bottom:3px; font-size:12.5px;}
-.tooltip .row{display:flex; justify-content:space-between; gap:14px;}
+.tooltip .row{display:flex; justify-content:space-between; align-items:baseline; gap:14px;}
 .tooltip .row .sw{width:8px;height:8px;border-radius:2px;display:inline-block;margin-right:5px;}
+.tooltip .row span:first-child{opacity:.72; font-weight:500;}
+.tooltip .row span:last-child{font-weight:700; font-size:12.5px;}
 
 .toolbar{display:flex; gap:10px; flex-wrap:wrap; align-items:center; padding:14px 20px; border-bottom:1px solid var(--border); background:var(--surface-2);}
 .toolbar input[type=text]{
@@ -212,6 +214,22 @@ tbody td.num{text-align:right; font-variant-numeric:tabular-nums; font-weight:60
 .pill.ReworkFS{background:#1baf7a1a; color:var(--series-3);}
 .pill.RushCharges{background:#eda1001a; color:#b07800;}
 .pill.Kill{background:#e349481a; color:var(--series-kill);}
+
+.hscroll-x{
+  overflow-x:auto; overflow-y:hidden; -webkit-overflow-scrolling:touch;
+  scrollbar-width:thin; scrollbar-color:var(--border) transparent;
+}
+.hscroll-x::-webkit-scrollbar{height:8px;}
+.hscroll-x::-webkit-scrollbar-track{background:transparent;}
+.hscroll-x::-webkit-scrollbar-thumb{background:var(--border); border-radius:4px;}
+.hscroll-x::-webkit-scrollbar-thumb:hover{background:var(--text-muted);}
+.hscroll-x svg{display:block;}
+.scroll-hint{
+  display:none; align-items:center; gap:6px; font-size:11px; font-weight:600; color:var(--accent);
+  padding:0 20px 10px; opacity:.85;
+}
+.scroll-hint.show{display:flex;}
+.scroll-hint svg{width:13px;height:13px;}
 
 .footer-note{font-size:11.5px; color:var(--text-muted); text-align:center; padding:26px 0 6px; line-height:1.7;}
 .footer-note b{color:var(--text-secondary);}
@@ -252,7 +270,7 @@ tbody td.num{text-align:right; font-variant-numeric:tabular-nums; font-weight:60
 <div class="topbar">
   <div>
     <h1>Quality Dashboard</h1>
-    <div class="sub">REV Engineering &nbsp;·&nbsp; FY2019 – FY2026 &nbsp;·&nbsp;</div>
+    <div class="sub">REV Engineering &nbsp;·&nbsp; FY2019 – FY2026 &nbsp;</div>
   </div>
   <div class="topbar-right">
     <button class="theme-toggle" id="themeToggle">🌙 Dark mode</button>
@@ -287,6 +305,13 @@ tbody td.num{text-align:right; font-variant-numeric:tabular-nums; font-weight:60
       <div class="panel-body" id="quarterlyChart"></div>
     </div>
 
+    <div class="panel">
+      <div class="panel-head">
+        <div><h2>Category Mix — Last 16 Quarters</h2><div class="desc">Share of Total COPQ contributed by each category, per quarter</div></div>
+      </div>
+      <div class="panel-body" id="mixTrendChart"></div>
+    </div>
+
     <div class="grid2">
       <div class="panel">
         <div class="panel-head">
@@ -296,25 +321,17 @@ tbody td.num{text-align:right; font-variant-numeric:tabular-nums; font-weight:60
       </div>
       <div class="panel">
         <div class="panel-head">
-          <div><h2>Category Mix — Last 16 Quarters</h2><div class="desc">Share of Total COPQ contributed by each category, per quarter</div></div>
-        </div>
-        <div class="panel-body" id="mixTrendChart"></div>
-      </div>
-    </div>
-
-    <div class="grid2">
-      <div class="panel">
-        <div class="panel-head">
           <div><h2>Fiscal-Year Comparison</h2><div class="desc">Total COPQ by category, FY2023 – FY2026 (FY26 in progress through Q4)</div></div>
         </div>
         <div class="panel-body" id="fyChart"></div>
       </div>
-      <div class="panel">
-        <div class="panel-head">
-          <div><h2>Supplementary: Kill &amp; Bad Debts</h2><div class="desc">Tracked separately — not part of Total COPQ</div></div>
-        </div>
-        <div class="panel-body" id="killBadDebtPanel"></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <div><h2>Supplementary: Kill &amp; Bad Debts</h2><div class="desc">Tracked separately — not part of Total COPQ</div></div>
       </div>
+      <div class="panel-body" id="killBadDebtPanel"></div>
     </div>
 
     <div class="grid2b">
@@ -325,7 +342,8 @@ tbody td.num{text-align:right; font-variant-numeric:tabular-nums; font-weight:60
           </div>
           <button class="jump-link" data-jump="ncr">Full detail →</button>
         </div>
-        <div class="panel-body" id="clientsChartCondensed"></div>
+        <div class="scroll-hint" id="clientsChartCondensedHint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 12h16M4 12l5-5M4 12l5 5M20 12l-5-5M20 12l-5 5"/></svg>Scroll to see full names</div>
+        <div class="panel-body hscroll-x" id="clientsChartCondensed"></div>
       </div>
       <div class="panel">
         <div class="panel-head">
@@ -334,7 +352,8 @@ tbody td.num{text-align:right; font-variant-numeric:tabular-nums; font-weight:60
           </div>
           <button class="jump-link" data-jump="ncr">Full detail →</button>
         </div>
-        <div class="panel-body" id="jobsChartCondensed"></div>
+        <div class="scroll-hint" id="jobsChartCondensedHint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 12h16M4 12l5-5M4 12l5 5M20 12l-5-5M20 12l-5 5"/></svg>Scroll to see full names</div>
+        <div class="panel-body hscroll-x" id="jobsChartCondensed"></div>
       </div>
     </div>
 
@@ -350,7 +369,8 @@ tbody td.num{text-align:right; font-variant-numeric:tabular-nums; font-weight:60
         <div class="panel-head">
           <div><h2>Cost Driver Mix</h2><div class="desc">All-time total by category (FY19–FY26)</div></div>
         </div>
-        <div class="panel-body" id="mixChart"></div>
+        <div class="scroll-hint" id="mixChartHint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 12h16M4 12l5-5M4 12l5 5M20 12l-5-5M20 12l-5 5"/></svg>Scroll to see full names</div>
+        <div class="panel-body hscroll-x" id="mixChart"></div>
       </div>
       <div class="panel">
         <div class="panel-head">
@@ -367,17 +387,20 @@ tbody td.num{text-align:right; font-variant-numeric:tabular-nums; font-weight:60
           <div class="desc">Ranked across all 1,219 distinct NCR jobs since FY2019</div>
         </div>
       </div>
+      <div class="scroll-hint" id="paretoChartHint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 12h16M4 12l5-5M4 12l5 5M20 12l-5-5M20 12l-5 5"/></svg>Scroll to see full names</div>
       <div class="panel-body" id="paretoChart"></div>
     </div>
 
     <div class="grid2b">
       <div class="panel">
         <div class="panel-head"><div><h2>Top Clients by COPQ Cost</h2><div class="desc">Top 12 of 548 distinct clients</div></div></div>
-        <div class="panel-body" id="clientsChart"></div>
+        <div class="scroll-hint" id="clientsChartHint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 12h16M4 12l5-5M4 12l5 5M20 12l-5-5M20 12l-5 5"/></svg>Scroll to see full names</div>
+        <div class="panel-body hscroll-x" id="clientsChart"></div>
       </div>
       <div class="panel">
         <div class="panel-head"><div><h2>Top Cost-Driving Resources</h2><div class="desc">Labor lines only · top 12 of 548</div></div></div>
-        <div class="panel-body" id="resourcesChart"></div>
+        <div class="scroll-hint" id="resourcesChartHint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 12h16M4 12l5-5M4 12l5 5M20 12l-5-5M20 12l-5 5"/></svg>Scroll to see full names</div>
+        <div class="panel-body hscroll-x" id="resourcesChart"></div>
       </div>
     </div>
 
@@ -388,7 +411,8 @@ tbody td.num{text-align:right; font-variant-numeric:tabular-nums; font-weight:60
       </div>
       <div class="panel">
         <div class="panel-head"><div><h2>Cost by Country</h2></div></div>
-        <div class="panel-body" id="countryChart"></div>
+        <div class="scroll-hint" id="countryChartHint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 12h16M4 12l5-5M4 12l5 5M20 12l-5-5M20 12l-5 5"/></svg>Scroll to see full names</div>
+        <div class="panel-body hscroll-x" id="countryChart"></div>
       </div>
     </div>
 
@@ -420,7 +444,6 @@ tbody td.num{text-align:right; font-variant-numeric:tabular-nums; font-weight:60
 
   </div>
 
-
 </div>
 
 <div class="tooltip" id="tooltip"></div>
@@ -437,11 +460,33 @@ const fmtK = (v)=>{ const a=Math.abs(v); const s=v<0?'-':''; if(a>=1000000) retu
 const NS='http://www.w3.org/2000/svg';
 function svgEl(tag,attrs){ const e=document.createElementNS(NS,tag); for(const k in attrs) e.setAttribute(k,attrs[k]); return e; }
 
+// Rounded-rect path with per-corner radii — lets bars round only the data-end
+// and stay square at the baseline (and square on interior stacked boundaries).
+function roundedRectPath(x,y,w,h,tl,tr,br,bl){
+  w=Math.max(0,w); h=Math.max(0,h);
+  const maxR = Math.max(0,Math.min(w,h)/2);
+  tl=Math.min(tl,maxR); tr=Math.min(tr,maxR); br=Math.min(br,maxR); bl=Math.min(bl,maxR);
+  return `M${x+tl},${y} H${x+w-tr} A${tr},${tr} 0 0 1 ${x+w},${y+tr} V${y+h-br} A${br},${br} 0 0 1 ${x+w-br},${y+h} H${x+bl} A${bl},${bl} 0 0 1 ${x},${y+h-bl} V${y+tl} A${tl},${tl} 0 0 1 ${x+tl},${y} Z`;
+}
+// Vertical bar/column: rounded top (data-end), square baseline. Pass isTop=false for
+// an interior stacked segment (no outward tip) to keep it fully square.
+function barPathV(x,y,w,h,isTop=true,r=4){
+  return roundedRectPath(x,y,w,h, isTop?r:0, isTop?r:0, 0, 0);
+}
+// Diverging bar growing DOWN from a zero baseline: rounded bottom (data-end), square top (baseline).
+function barPathVDown(x,y,w,h,r=4){
+  return roundedRectPath(x,y,w,h, 0, 0, r, r);
+}
+// Horizontal bar: rounded right end (data-end), square left (baseline).
+function barPathH(x,y,w,h,r=4){
+  return roundedRectPath(x,y,w,h, 0, r, r, 0);
+}
+
 // ---------- theme ----------
 const themeBtn = $('#themeToggle');
 function applyTheme(t){
-  if(t==='light'){ document.documentElement.setAttribute('data-theme','light'); themeBtn.textContent='🌙 Dark mode'; }
-  else { document.documentElement.setAttribute('data-theme','dark'); themeBtn.textContent='☀️ Light mode'; }
+  if(t==='dark'){ document.documentElement.setAttribute('data-theme','dark'); themeBtn.textContent='☀️ Light mode'; }
+  else { document.documentElement.setAttribute('data-theme','light'); themeBtn.textContent='🌙 Dark mode'; }
   localStorage.setItem('ncr-theme', t);
 }
 try{
@@ -467,6 +512,52 @@ function positionTip(x,y){
 function hideTip(){ tip.style.opacity=0; }
 
 function cssVar(name){ return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+
+// Sets an SVG text element's content and, if it would overflow maxWidth, shrinks it
+// with an ellipsis via binary search against the text's ACTUAL rendered width
+// (getComputedTextLength — exact, not a char-count guess). The element must already
+// be attached to the live DOM (appended to an svg that's in the page) before calling.
+// Canvas-based text measurement — fast, no DOM attach needed. Used to size chart
+// margins so labels never have to be guessed-at or clipped; charts that would
+// otherwise be too tight instead grow wider than their container and scroll.
+const _measureCanvas = document.createElement('canvas');
+const _measureCtx = _measureCanvas.getContext('2d');
+const FONT_LABEL = "600 11px -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif";
+const FONT_VAL = "700 11px -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif";
+function measureText(text, font){ _measureCtx.font = font; return _measureCtx.measureText(text).width; }
+
+// clientWidth includes the element's own left+right padding, but a direct-child
+// SVG (or a wrapper div) only ever gets the CONTENT box to render into. Using
+// clientWidth directly overstates available width by exactly that padding,
+// which silently clips a few px off the right-most label/value text. This
+// gives the true usable width so charts size themselves to fit without any
+// unwanted overflow.
+function contentWidth(el){
+  const cs = getComputedStyle(el);
+  const w = el.clientWidth - parseFloat(cs.paddingLeft||0) - parseFloat(cs.paddingRight||0);
+  return w > 0 ? w : el.clientWidth;
+}
+
+// Shows/hides the "scroll to see full names" hint for a chart based on whether its
+// SVG actually ended up wider than the scrollable container that holds it.
+function updateScrollHint(containerId, svgWidth, containerWidth){
+  const hint = document.getElementById(containerId+'Hint');
+  if(!hint) return;
+  hint.classList.toggle('show', svgWidth > containerWidth + 1);
+}
+
+function fitText(textEl, fullText, maxWidth){
+  textEl.textContent = fullText;
+  if(maxWidth<=0) return;
+  if(textEl.getComputedTextLength() <= maxWidth) return;
+  let lo=0, hi=fullText.length;
+  while(lo<hi){
+    const mid = Math.ceil((lo+hi)/2);
+    textEl.textContent = fullText.slice(0,mid)+'…';
+    if(textEl.getComputedTextLength() <= maxWidth) lo=mid; else hi=mid-1;
+  }
+  textEl.textContent = lo>0 ? fullText.slice(0,lo)+'…' : '…';
+}
 
 const CATS = ['Warranty','Rework MF','Rework FS','Rush Charges'];
 const CAT_COLOR_VAR = {'Warranty':'--series-1','Rework MF':'--series-2','Rework FS':'--series-3','Rush Charges':'--series-4'};
@@ -557,27 +648,30 @@ function renderQuarterly(){
   svg.appendChild(svgEl('line',{x1:marginL,x2:W-marginR,y1:marginT+plotH,y2:marginT+plotH,class:'axis-line'}));
 
   const bw = plotW/rows.length;
-  const barW = Math.max(4, bw*0.62);
+  const barW = Math.min(24, Math.max(4, bw*0.62));
+  const GAP = 2; // surface-color gap between stacked segments
 
   rows.forEach((r,i)=>{
     const x0 = marginL + i*bw + (bw-barW)/2;
     let yCursor = marginT + plotH;
-    visCats.forEach(cat=>{
+    const visible = visCats.filter(c=>Math.max(0,r[c]||0)>0);
+    visible.forEach((cat,ci)=>{
       const v = Math.max(0, r[cat]||0);
-      if(v<=0) return;
       const segH = (v/niceMax)*plotH;
-      const y = yCursor - segH;
-      const rect = svgEl('rect',{x:x0,y:y,width:barW,height:Math.max(0,segH),fill:`var(${CAT_COLOR_VAR[cat]})`,class:'bar-seg',rx:1.5});
-      rect.addEventListener('mousemove',(e)=>{
+      const yTop = yCursor - segH;
+      const isTop = ci===visible.length-1; // outward tip of the stack gets the rounded data-end
+      const drawH = isTop ? segH : Math.max(1, segH-GAP);
+      const path = svgEl('path',{d: barPathV(x0, yTop, barW, drawH, isTop), fill:`var(${CAT_COLOR_VAR[cat]})`, class:'bar-seg'});
+      path.addEventListener('mousemove',(e)=>{
         const total = visCats.reduce((s,c)=>s+Math.max(0,r[c]||0),0);
         showTip(`<b>${r.quarter}</b>
           <div class="row"><span><span class="sw" style="background:var(${CAT_COLOR_VAR[cat]})"></span>${cat}</span><span>${fmt$(v)}</span></div>
           <div class="row" style="margin-top:4px;opacity:.75"><span>Quarter Total</span><span>${fmt$(total)}</span></div>
           <div class="row" style="opacity:.75"><span>NCR count</span><span>${r.ncrCount}</span></div>`, e.clientX, e.clientY);
       });
-      rect.addEventListener('mouseleave', hideTip);
-      svg.appendChild(rect);
-      yCursor = y;
+      path.addEventListener('mouseleave', hideTip);
+      svg.appendChild(path);
+      yCursor = yTop;
     });
     // x labels — sparse if many quarters, spaced to avoid overlap
     const qStep = rows.length<=12 ? 1 : Math.ceil(rows.length/10);
@@ -648,23 +742,27 @@ function renderFY(){
   svg.appendChild(svgEl('line',{x1:marginL,x2:marginL,y1:marginT,y2:marginT+plotH,class:'axis-line'}));
   svg.appendChild(svgEl('line',{x1:marginL,x2:W-marginR,y1:marginT+plotH,y2:marginT+plotH,class:'axis-line'}));
 
-  const bw=plotW/rows.length, barW=Math.min(90,bw*0.5);
+  const bw=plotW/rows.length, barW=Math.min(24,bw*0.5);
+  const GAP=2;
   rows.forEach((r,i)=>{
     const x0=marginL+i*bw+(bw-barW)/2;
     let yCursor=marginT+plotH;
-    CATS.forEach(cat=>{
-      const v=Math.max(0,r[cat]||0); if(v<=0) return;
-      const segH=(v/maxV)*plotH; const y=yCursor-segH;
-      const rect=svgEl('rect',{x:x0,y:y,width:barW,height:Math.max(0,segH),fill:`var(${CAT_COLOR_VAR[cat]})`,class:'bar-seg',rx:1.5});
-      rect.addEventListener('mousemove',(e)=>{
+    const visible = CATS.filter(c=>Math.max(0,r[c]||0)>0);
+    visible.forEach((cat,ci)=>{
+      const v=Math.max(0,r[cat]||0);
+      const segH=(v/maxV)*plotH; const yTop=yCursor-segH;
+      const isTop = ci===visible.length-1;
+      const drawH = isTop ? segH : Math.max(1,segH-GAP);
+      const path=svgEl('path',{d: barPathV(x0,yTop,barW,drawH,isTop), fill:`var(${CAT_COLOR_VAR[cat]})`, class:'bar-seg'});
+      path.addEventListener('mousemove',(e)=>{
         showTip(`<b>${r.fy}${r.fy==='FY2026'?' (in progress)':''}</b>
           <div class="row"><span><span class="sw" style="background:var(${CAT_COLOR_VAR[cat]})"></span>${cat}</span><span>${fmt$(v)}</span></div>
           <div class="row" style="margin-top:4px;opacity:.75"><span>FY Total COPQ</span><span>${fmt$(r['Total COPQ'])}</span></div>
           <div class="row" style="opacity:.75"><span>NCR count</span><span>${r.ncrCount}</span></div>`, e.clientX, e.clientY);
       });
-      rect.addEventListener('mouseleave',hideTip);
-      svg.appendChild(rect);
-      yCursor=y;
+      path.addEventListener('mouseleave',hideTip);
+      svg.appendChild(path);
+      yCursor=yTop;
     });
     const totalLabel = svgEl('text',{x:x0+barW/2,y:yCursor-8,class:'hbar-val','text-anchor':'middle'});
     totalLabel.textContent = fmtK(r['Total COPQ']); svg.appendChild(totalLabel);
@@ -713,14 +811,14 @@ function renderYoY(){
   svg.appendChild(svgEl('line',{x1:marginL,x2:W-marginR,y1:marginT+plotH,y2:marginT+plotH,class:'axis-line'}));
 
   const bw = plotW/rows.length;
-  const pairW = Math.min(64, bw*0.66);
-  const barW = pairW/2 - 2;
+  const pairW = Math.min(48, bw*0.66);
+  const barW = Math.min(22, pairW/2 - 2);
   rows.forEach((r,i)=>{
     const cx = marginL + i*bw + bw/2;
     // prior (muted) bar
     const hP = (r.prior/maxV)*plotH;
     const xP = cx - pairW/2;
-    const rp = svgEl('rect',{x:xP,y:marginT+plotH-hP,width:barW,height:Math.max(0,hP),fill:'var(--text-muted)',opacity:.45,rx:2,class:'bar-seg'});
+    const rp = svgEl('path',{d: barPathV(xP, marginT+plotH-hP, barW, hP, true, 3), fill:'var(--text-muted)', opacity:.45, class:'bar-seg'});
     rp.addEventListener('mousemove',(e)=>{ showTip(`<b>${r.priorLabel} (prior year)</b><div class="row"><span>Total COPQ</span><span>${fmt$(r.prior)}</span></div>`, e.clientX, e.clientY); });
     rp.addEventListener('mouseleave',hideTip);
     svg.appendChild(rp);
@@ -728,7 +826,7 @@ function renderYoY(){
     const hC = (r.current/maxV)*plotH;
     const xC = cx + 2;
     const pctChange = r.prior!==0 ? ((r.current-r.prior)/Math.abs(r.prior)*100) : null;
-    const rc = svgEl('rect',{x:xC,y:marginT+plotH-hC,width:barW,height:Math.max(0,hC),fill: pctChange!==null && pctChange>0 ? 'var(--critical)':'var(--good)',rx:2,class:'bar-seg'});
+    const rc = svgEl('path',{d: barPathV(xC, marginT+plotH-hC, barW, hC, true, 3), fill: pctChange!==null && pctChange>0 ? 'var(--critical)':'var(--good)', class:'bar-seg'});
     rc.addEventListener('mousemove',(e)=>{
       showTip(`<b>${r.label} (current)</b><div class="row"><span>Total COPQ</span><span>${fmt$(r.current)}</span></div>
         <div class="row" style="opacity:.8"><span>vs ${r.priorLabel}</span><span>${pctChange===null?'n/a':(pctChange>=0?'+':'')+pctChange.toFixed(1)+'%'}</span></div>`, e.clientX, e.clientY);
@@ -764,7 +862,8 @@ function renderMixTrend(){
   svg.appendChild(svgEl('line',{x1:marginL,x2:marginL,y1:marginT,y2:marginT+plotH,class:'axis-line'}));
   svg.appendChild(svgEl('line',{x1:marginL,x2:W-marginR,y1:marginT+plotH,y2:marginT+plotH,class:'axis-line'}));
 
-  const bw=plotW/rows.length, barW=Math.max(4,bw*0.68);
+  const bw=plotW/rows.length, barW=Math.min(24,Math.max(4,bw*0.68));
+  const GAP=2;
   const qStep = rows.length<=12?1:Math.ceil(rows.length/10);
   rows.forEach((r,i)=>{
     const total = CATS.reduce((s,c)=>s+Math.max(0,r[c]||0),0);
@@ -773,18 +872,21 @@ function renderMixTrend(){
     if(total<=0){
       const t=svgEl('text',{x:x0+barW/2,y:marginT+plotH/2,class:'axis-label','text-anchor':'middle'}); t.textContent='—'; svg.appendChild(t);
     } else {
-      CATS.forEach(cat=>{
-        const v = Math.max(0,r[cat]||0); if(v<=0) return;
+      const visible = CATS.filter(c=>Math.max(0,r[c]||0)>0);
+      visible.forEach((cat,ci)=>{
+        const v = Math.max(0,r[cat]||0);
         const pct = v/total*100;
         const segH = (pct/100)*plotH;
-        const y = yCursor-segH;
-        const rect = svgEl('rect',{x:x0,y:y,width:barW,height:Math.max(0,segH),fill:`var(${CAT_COLOR_VAR[cat]})`,class:'bar-seg',rx:1});
-        rect.addEventListener('mousemove',(e)=>{
+        const yTop = yCursor-segH;
+        const isTop = ci===visible.length-1;
+        const drawH = isTop ? segH : Math.max(1,segH-GAP);
+        const path = svgEl('path',{d: barPathV(x0,yTop,barW,drawH,isTop,3), fill:`var(${CAT_COLOR_VAR[cat]})`, class:'bar-seg'});
+        path.addEventListener('mousemove',(e)=>{
           showTip(`<b>${r.quarter}</b><div class="row"><span><span class="sw" style="background:var(${CAT_COLOR_VAR[cat]})"></span>${cat}</span><span>${pct.toFixed(1)}%</span></div><div class="row" style="opacity:.75"><span>Amount</span><span>${fmt$(v)}</span></div>`, e.clientX, e.clientY);
         });
-        rect.addEventListener('mouseleave',hideTip);
-        svg.appendChild(rect);
-        yCursor=y;
+        path.addEventListener('mouseleave',hideTip);
+        svg.appendChild(path);
+        yCursor=yTop;
       });
     }
     if(i%qStep===0){
@@ -819,27 +921,42 @@ function renderMix(){
   totals.sort((a,b)=>b.total-a.total);
   const grand = totals.reduce((s,t)=>s+t.total,0);
 
-  const W = Math.max(container.clientWidth||500,420);
   const rowH = 46, H = totals.length*rowH + 14;
-  const marginL=110, marginR=110, plotW=W-marginL-marginR;
+
+  // Measure everything up front — the value label sits right after each bar's own
+  // tip, so the widest bar (100% length) sets how much room every row needs on the
+  // right; nothing is ever truncated, the chart just scrolls if it must.
+  const plotWmin = 220;
+  const marginL = Math.ceil(Math.max(...totals.map(t=>measureText(t.cat,FONT_LABEL)))) + 26;
+  const valueTexts = totals.map(t=>fmtK(t.total)+'  ('+(t.total/grand*100).toFixed(0)+'%)');
+  const marginR = Math.ceil(Math.max(...valueTexts.map(t=>measureText(t,FONT_VAL)))) + 24;
+
+  const containerW = contentWidth(container) || 420;
+  const plotW = Math.max(plotWmin, containerW - marginL - marginR);
+  const W = marginL + plotW + marginR;
   const maxV = Math.max(...totals.map(t=>t.total));
 
   const svg = svgEl('svg',{width:W,height:H,viewBox:`0 0 ${W} ${H}`});
+  container.appendChild(svg);
   totals.forEach((t,i)=>{
     const y = 8 + i*rowH;
     const barH = 22;
     const w = (t.total/maxV)*plotW;
-    const label = svgEl('text',{x:marginL-10,y:y+barH/2+4,class:'hbar-label','text-anchor':'end'}); label.textContent=t.cat; svg.appendChild(label);
+    const label = svgEl('text',{x:marginL-10,y:y+barH/2+4,class:'hbar-label','text-anchor':'end'});
+    label.textContent = t.cat;
+    svg.appendChild(label);
     svg.appendChild(svgEl('rect',{x:marginL,y:y,width:plotW,height:barH,fill:'var(--surface-2)',rx:5}));
-    const rect = svgEl('rect',{x:marginL,y:y,width:Math.max(2,w),height:barH,fill:`var(${CAT_COLOR_VAR[t.cat]})`,rx:5,class:'hbar'});
+    const rect = svgEl('path',{d: barPathH(marginL,y,Math.max(2,w),barH,5), fill:`var(${CAT_COLOR_VAR[t.cat]})`, class:'hbar'});
     rect.addEventListener('mousemove',(e)=>{
       showTip(`<b>${t.cat}</b><div class="row"><span>All-time total</span><span>${fmt$(t.total)}</span></div><div class="row"><span>Share of Total COPQ</span><span>${(t.total/grand*100).toFixed(1)}%</span></div>`, e.clientX, e.clientY);
     });
     rect.addEventListener('mouseleave',hideTip);
     svg.appendChild(rect);
-    const vlabel = svgEl('text',{x:marginL+w+8,y:y+barH/2+4,class:'hbar-val'}); vlabel.textContent = fmtK(t.total)+'  ('+(t.total/grand*100).toFixed(0)+'%)'; svg.appendChild(vlabel);
+    const vlabel = svgEl('text',{x:marginL+w+8,y:y+barH/2+4,class:'hbar-val'});
+    vlabel.textContent = valueTexts[i];
+    svg.appendChild(vlabel);
   });
-  container.appendChild(svg);
+  updateScrollHint('mixChart', W, containerW);
 }
 
 // =========================================================
@@ -868,19 +985,43 @@ function renderNcrCount(){
   const path = pts.map((p,i)=> (i===0?'M':'L')+p.x.toFixed(1)+','+p.y.toFixed(1)).join(' ');
   svg.appendChild(svgEl('path',{d:path,class:'line-path',stroke:'var(--series-1)'}));
 
-  pts.forEach((p,i)=>{
+  // crosshair — a vertical hairline that snaps to the nearest data position on hover
+  const crosshair = svgEl('line',{x1:marginL,x2:marginL,y1:marginT,y2:marginT+plotH,class:'crosshair'});
+  svg.appendChild(crosshair);
+
+  const dots = pts.map((p,i)=>{
     const c = svgEl('circle',{cx:p.x,cy:p.y,r:3.5,fill:'var(--series-1)',stroke:'var(--surface-1)','stroke-width':1.5,class:'dot'});
-    c.addEventListener('mousemove',(e)=>{
-      showTip(`<b>${p.r.quarter}</b><div class="row"><span>NCR count</span><span>${p.r.ncrCount}</span></div><div class="row"><span>Total COPQ</span><span>${fmt$(p.r['Total COPQ'])}</span></div>`, e.clientX, e.clientY);
-    });
-    c.addEventListener('mouseleave',hideTip);
     svg.appendChild(c);
+    return c;
+  });
+
+  pts.forEach((p,i)=>{
     const nStep = rows.length<=10 ? 1 : 2;
     const showLabel = i%nStep===0;
     if(showLabel){
       const t = svgEl('text',{x:p.x,y:marginT+plotH+18,class:'axis-label','text-anchor':'middle'}); t.textContent=p.r.quarter; svg.appendChild(t);
     }
   });
+
+  // one large hit-rect over the whole plot: the mark IS the mouse-nearest data point,
+  // so the hit target is never smaller than the ~24px minimum the skill requires
+  const hit = svgEl('rect',{x:marginL,y:marginT,width:Math.max(0,plotW),height:Math.max(0,plotH),fill:'transparent',style:'cursor:crosshair'});
+  hit.addEventListener('mousemove',(e)=>{
+    const rectBox = svg.getBoundingClientRect();
+    const localX = (e.clientX-rectBox.left) * (W/rectBox.width);
+    let idx = Math.round((localX-marginL)/stepX);
+    idx = Math.max(0, Math.min(pts.length-1, idx));
+    const p = pts[idx];
+    crosshair.setAttribute('x1',p.x); crosshair.setAttribute('x2',p.x); crosshair.style.opacity=1;
+    dots.forEach((d,i)=>{ d.setAttribute('r', i===idx?5.5:3.5); });
+    showTip(`<b>${p.r.quarter}</b><div class="row"><span>NCR count</span><span>${p.r.ncrCount}</span></div><div class="row"><span>Total COPQ</span><span>${fmt$(p.r['Total COPQ'])}</span></div>`, e.clientX, e.clientY);
+  });
+  hit.addEventListener('mouseleave',()=>{
+    crosshair.style.opacity=0;
+    dots.forEach(d=>d.setAttribute('r',3.5));
+    hideTip();
+  });
+  svg.appendChild(hit);
   container.appendChild(svg);
 }
 
@@ -898,7 +1039,7 @@ function renderKillBadDebt(){
   const strip = document.createElement('div'); strip.className='stat-strip';
   stats.forEach(s=>{
     const d=document.createElement('div'); d.className='stat-mini';
-    d.innerHTML = `<div class="l">${s.l}</div><div class="v" style="color:${s.v<0?'var(--good)':'var(--series-kill)'}">${fmt$(s.v)}</div><div class="note" style="margin-top:4px">${s.note}</div>`;
+    d.innerHTML = `<div class="l">${s.l}</div><div class="v" style="color:${s.v<0?'var(--good)':'var(--critical)'}">${fmt$(s.v)}</div><div class="note" style="margin-top:4px">${s.note}</div>`;
     strip.appendChild(d);
   });
   container.appendChild(strip);
@@ -912,15 +1053,17 @@ function renderKillBadDebt(){
   const svg = svgEl('svg',{width:W,height:H,viewBox:`0 0 ${W} ${H}`,style:'margin-top:14px'});
   const zeroY = marginT + plotH/2;
   svg.appendChild(svgEl('line',{x1:marginL,x2:W-marginR,y1:zeroY,y2:zeroY,class:'axis-line'}));
-  const bw = plotW/rows.length, barW=Math.min(70,bw*0.5);
+  const bw = plotW/rows.length, barW=Math.min(24,bw*0.5);
   rows.forEach((r,i)=>{
     const x0=marginL+i*bw+(bw-barW)/2;
-    const h = (Math.abs(r.Kill)/maxAbs)*(plotH/2-8);
-    const y = r.Kill>=0 ? zeroY-h : zeroY;
-    const rect = svgEl('rect',{x:x0,y:y,width:barW,height:Math.max(1,h),fill: r.Kill>=0?'var(--series-kill)':'var(--good)',rx:3,class:'hbar'});
-    rect.addEventListener('mousemove',(e)=>{ showTip(`<b>${r.fy}</b><div class="row"><span>Kill (net)</span><span>${fmt$(r.Kill)}</span></div>`, e.clientX, e.clientY); });
-    rect.addEventListener('mouseleave',hideTip);
-    svg.appendChild(rect);
+    const h = Math.max(1,(Math.abs(r.Kill)/maxAbs)*(plotH/2-8));
+    const isPos = r.Kill>=0;
+    const y = isPos ? zeroY-h : zeroY;
+    const d = isPos ? barPathV(x0,y,barW,h,true,3) : barPathVDown(x0,y,barW,h,3);
+    const path = svgEl('path',{d, fill: isPos?'var(--critical)':'var(--good)', class:'hbar'});
+    path.addEventListener('mousemove',(e)=>{ showTip(`<b>${r.fy}</b><div class="row"><span>Kill (net)</span><span>${fmt$(r.Kill)}</span></div>`, e.clientX, e.clientY); });
+    path.addEventListener('mouseleave',hideTip);
+    svg.appendChild(path);
     const t=svgEl('text',{x:x0+barW/2,y:H-8,class:'axis-label','text-anchor':'middle'}); t.textContent=r.fy; svg.appendChild(t);
   });
   container.appendChild(svg);
@@ -942,18 +1085,32 @@ function renderPareto(){
     <div class="stat-mini"><div class="l">#1 Offender</div><div class="v">${fmtK(jobs[0].totalCost)}</div><div class="note" style="margin-top:4px">${jobs[0].jobNo} · ${jobs[0].client}</div></div>`;
   container.appendChild(stats);
 
-  const W = Math.max(container.clientWidth||900,700);
   const rowH = 30, H = jobs.length*rowH + 10;
-  const marginL=130, marginR=160, plotW=W-marginL-marginR;
   const maxV = Math.max(...jobs.map(j=>j.totalCost));
 
+  // Measure every label's FULL text up front — nothing here ever gets truncated.
+  // If the longest one needs more room than the panel has, the chart grows wider
+  // than its container instead, and the container scrolls horizontally.
+  const marginL = 130, plotWmin = 320;
+  const rightTexts = jobs.map(j => fmtK(j.totalCost)+' · '+j.client);
+  const marginR = Math.ceil(Math.max(...rightTexts.map(t=>measureText(t,FONT_VAL)))) + 24;
+
+  const containerW = contentWidth(container) || 900;
+  const plotW = Math.max(plotWmin, containerW - marginL - marginR);
+  const W = marginL + plotW + marginR;
+
+  const scrollWrap = document.createElement('div'); scrollWrap.className='hscroll-x';
+  container.appendChild(scrollWrap);
   const svg = svgEl('svg',{width:W,height:H,viewBox:`0 0 ${W} ${H}`});
+  scrollWrap.appendChild(svg);
   jobs.forEach((j,i)=>{
     const y=6+i*rowH, barH=18;
     const w=(j.totalCost/maxV)*plotW;
-    const label = svgEl('text',{x:marginL-10,y:y+barH/2+4,class:'hbar-label','text-anchor':'end'}); label.textContent=j.jobNo; svg.appendChild(label);
+    const label = svgEl('text',{x:marginL-10,y:y+barH/2+4,class:'hbar-label','text-anchor':'end'});
+    label.textContent = j.jobNo;
+    svg.appendChild(label);
     svg.appendChild(svgEl('rect',{x:marginL,y:y,width:plotW,height:barH,fill:'var(--surface-2)',rx:4}));
-    const rect = svgEl('rect',{x:marginL,y:y,width:Math.max(2,w),height:barH,fill:'var(--series-1)',rx:4,class:'hbar',opacity: 1-i*0.035});
+    const rect = svgEl('path',{d: barPathH(marginL,y,Math.max(2,w),barH,4), fill:'var(--series-1)', class:'hbar', opacity: 1-i*0.035});
     rect.addEventListener('mousemove',(e)=>{
       showTip(`<b>${j.jobNo}</b><div style="opacity:.85;margin-bottom:4px">${j.client} — ${j.jobDesc||''}</div>
         <div class="row"><span>Category</span><span>${j.category}</span></div>
@@ -963,9 +1120,11 @@ function renderPareto(){
     });
     rect.addEventListener('mouseleave',hideTip);
     svg.appendChild(rect);
-    const vlabel = svgEl('text',{x:marginL+plotW+8,y:y+barH/2+4,class:'hbar-val'}); vlabel.textContent = fmtK(j.totalCost)+' · '+j.client; svg.appendChild(vlabel);
+    const vlabel = svgEl('text',{x:marginL+plotW+8,y:y+barH/2+4,class:'hbar-val'});
+    vlabel.textContent = rightTexts[i];
+    svg.appendChild(vlabel);
   });
-  container.appendChild(svg);
+  updateScrollHint('paretoChart', W, containerW);
 }
 
 // =========================================================
@@ -974,24 +1133,38 @@ function renderPareto(){
 function renderHBarSimple(containerSel, items, valueKey, labelKey, subKey, colorVar, tipFn, count=12){
   const container = $(containerSel); container.innerHTML='';
   const rows = items.slice(0,count);
-  const W = Math.max(container.clientWidth||500,420);
   const rowH=32, H=rows.length*rowH+8;
-  const marginL=150, marginR=90, plotW=W-marginL-marginR;
+
+  // Measure the full, untruncated label text up front. The chart's own margin grows
+  // to fit the longest one — never a guess, never a clip — and if that makes the
+  // chart wider than the panel, the container (class hscroll-x) scrolls to it.
+  const plotWmin = 220;
+  const marginL = Math.ceil(Math.max(...rows.map(r=>measureText(String(r[labelKey]),FONT_LABEL)))) + 26;
+  const valueTexts = rows.map(r=>fmtK(r[valueKey]));
+  const marginR = Math.ceil(Math.max(...valueTexts.map(t=>measureText(t,FONT_VAL)))) + 24;
+
+  const containerW = contentWidth(container) || 420;
+  const plotW = Math.max(plotWmin, containerW - marginL - marginR);
+  const W = marginL + plotW + marginR;
   const maxV = Math.max(...rows.map(r=>r[valueKey]));
   const svg = svgEl('svg',{width:W,height:H,viewBox:`0 0 ${W} ${H}`});
+  container.appendChild(svg);
   rows.forEach((r,i)=>{
     const y=6+i*rowH, barH=19;
     const w=(r[valueKey]/maxV)*plotW;
-    const lbl = r[labelKey].length>22? r[labelKey].slice(0,21)+'…' : r[labelKey];
-    const label = svgEl('text',{x:marginL-10,y:y+barH/2+4,class:'hbar-label','text-anchor':'end'}); label.textContent=lbl; svg.appendChild(label);
+    const label = svgEl('text',{x:marginL-10,y:y+barH/2+4,class:'hbar-label','text-anchor':'end'});
+    label.textContent = r[labelKey];
+    svg.appendChild(label);
     svg.appendChild(svgEl('rect',{x:marginL,y:y,width:plotW,height:barH,fill:'var(--surface-2)',rx:4}));
-    const rect = svgEl('rect',{x:marginL,y:y,width:Math.max(2,w),height:barH,fill:`var(${colorVar})`,rx:4,class:'hbar',opacity:1-i*0.03});
+    const rect = svgEl('path',{d: barPathH(marginL,y,Math.max(2,w),barH,4), fill:`var(${colorVar})`, class:'hbar', opacity:1-i*0.03});
     rect.addEventListener('mousemove',(e)=>{ showTip(tipFn(r), e.clientX, e.clientY); });
     rect.addEventListener('mouseleave',hideTip);
     svg.appendChild(rect);
-    const vlabel = svgEl('text',{x:marginL+plotW+8,y:y+barH/2+4,class:'hbar-val'}); vlabel.textContent = fmtK(r[valueKey]); svg.appendChild(vlabel);
+    const vlabel = svgEl('text',{x:marginL+plotW+8,y:y+barH/2+4,class:'hbar-val'});
+    vlabel.textContent = valueTexts[i];
+    svg.appendChild(vlabel);
   });
-  container.appendChild(svg);
+  updateScrollHint(containerSel.slice(1), W, containerW);
 }
 
 function renderClients(){
@@ -1035,22 +1208,36 @@ function renderCountry(){
   const entries = Object.entries(m).sort((a,b)=>b[1]-a[1]);
   const total = entries.reduce((s,e)=>s+e[1],0);
   const colors = ['var(--series-1)','var(--series-3)','var(--series-4)'];
-  const W = Math.max(container.clientWidth||400,300), rowH=34, H=entries.length*rowH+8;
-  const marginL=54, marginR=80, plotW=W-marginL-marginR;
+  const rowH=34, H=entries.length*rowH+8;
+
+  const plotWmin = 220;
+  const marginL = Math.ceil(Math.max(...entries.map(([c])=>measureText(c,FONT_LABEL)))) + 26;
+  const valueTexts = entries.map(([,val])=>fmtK(val));
+  const marginR = Math.ceil(Math.max(...valueTexts.map(t=>measureText(t,FONT_VAL)))) + 24;
+
+  const containerW = contentWidth(container) || 300;
+  const plotW = Math.max(plotWmin, containerW - marginL - marginR);
+  const W = marginL + plotW + marginR;
   const maxV = entries[0][1];
+
   const svg = svgEl('svg',{width:W,height:H,viewBox:`0 0 ${W} ${H}`});
+  container.appendChild(svg);
   entries.forEach(([country,val],i)=>{
     const y=6+i*rowH, barH=20;
     const w=(val/maxV)*plotW;
-    const label=svgEl('text',{x:marginL-10,y:y+barH/2+4,class:'hbar-label','text-anchor':'end'}); label.textContent=country; svg.appendChild(label);
+    const label=svgEl('text',{x:marginL-10,y:y+barH/2+4,class:'hbar-label','text-anchor':'end'});
+    label.textContent = country;
+    svg.appendChild(label);
     svg.appendChild(svgEl('rect',{x:marginL,y:y,width:plotW,height:barH,fill:'var(--surface-2)',rx:4}));
-    const rect=svgEl('rect',{x:marginL,y:y,width:Math.max(2,w),height:barH,fill:colors[i%colors.length],rx:4,class:'hbar'});
+    const rect=svgEl('path',{d: barPathH(marginL,y,Math.max(2,w),barH,4), fill:colors[i%colors.length], class:'hbar'});
     rect.addEventListener('mousemove',(e)=>{ showTip(`<b>${country}</b><div class="row"><span>Total COPQ cost</span><span>${fmt$(val)}</span></div><div class="row"><span>Share</span><span>${(val/total*100).toFixed(1)}%</span></div>`, e.clientX, e.clientY); });
     rect.addEventListener('mouseleave',hideTip);
     svg.appendChild(rect);
-    const vlabel=svgEl('text',{x:marginL+plotW+8,y:y+barH/2+4,class:'hbar-val'}); vlabel.textContent=fmtK(val); svg.appendChild(vlabel);
+    const vlabel=svgEl('text',{x:marginL+plotW+8,y:y+barH/2+4,class:'hbar-val'});
+    vlabel.textContent = valueTexts[i];
+    svg.appendChild(vlabel);
   });
-  container.appendChild(svg);
+  updateScrollHint('countryChart', W, containerW);
 }
 
 // =========================================================
