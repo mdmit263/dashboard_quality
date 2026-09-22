@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cost of Poor Quality — Board Dashboard</title>
+<style>
+  :root{
+    color-scheme: light;
+    --surface-0:#f5f5f3; --surface-1:#ffffff; --surface-2:#f0efec;
+    --border:#e2e0da; --border-strong:#c9c6bd;
+    --text-primary:#0b0b0b; --text-secondary:#52514e; --text-muted:#84827b;
+    --series-1:#2a78d6; /* Warranty Jobs */
+    --series-2:#eb6834; /* Rework MF */
+    --series-3:#1baf7a; /* Rush Charges */
+    --status-good:#0ca30c; --status-warning:#fab219; --status-serious:#ec835a; --status-critical:#d03b3b;
+    --grid:#dedcd5;
+  }
+  :root:where(:not([data-theme="light"])){
+    @media (prefers-color-scheme: dark){
+      color-scheme: dark;
+      --surface-0:#141413; --surface-1:#1a1a19; --surface-2:#232320;
+      --border:#33322e; --border-strong:#46453f;
+      --text-primary:#ffffff; --text-secondary:#c3c2b7; --text-muted:#8b8a81;
+      --series-1:#3987e5; --series-2:#d95926; --series-3:#199e70;
+      --status-good:#0ca30c; --status-warning:#fab219; --status-serious:#ec835a; --status-critical:#e66767;
+      --grid:#2c2b27;
+    }
+  }
+  :root[data-theme="dark"]{
+    color-scheme: dark;
+    --surface-0:#141413; --surface-1:#1a1a19; --surface-2:#232320;
+    --border:#33322e; --border-strong:#46453f;
+    --text-primary:#ffffff; --text-secondary:#c3c2b7; --text-muted:#8b8a81;
+    --series-1:#3987e5; --series-2:#d95926; --series-3:#199e70;
+    --status-good:#0ca30c; --status-warning:#fab219; --status-serious:#ec835a; --status-critical:#e66767;
+    --grid:#2c2b27;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--surface-0); color:var(--text-primary);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1280px;margin:0 auto;padding:20px 20px 64px;}
+  header.top{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:4px;}
+  h1{font-size:22px;font-weight:700;margin:0 0 4px;}
+  .subtitle{color:var(--text-secondary);font-size:13.5px;margin:0;}
+  .top-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+  button.pill{
+    background:var(--surface-1);border:1px solid var(--border-strong);color:var(--text-primary);
+    border-radius:999px;padding:7px 14px;font-size:13px;cursor:pointer;font-weight:500;
+  }
+  button.pill:hover{background:var(--surface-2);}
+  button.pill.active{background:var(--text-primary);color:var(--surface-1);border-color:var(--text-primary);}
+
+  .banner{
+    margin:16px 0 20px; padding:12px 16px; border-radius:10px;
+    background:var(--surface-2); border:1px solid var(--border);
+    font-size:12.5px; color:var(--text-secondary); line-height:1.5;
+  }
+  .banner b{color:var(--text-primary);}
+  .banner .dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--status-warning);margin-right:7px;vertical-align:1px;}
+
+  .filters{
+    display:flex; gap:10px; align-items:center; flex-wrap:wrap;
+    margin:18px 0 16px; padding:10px 12px; background:var(--surface-1); border:1px solid var(--border);
+    border-radius:10px;
+  }
+  .filters label{font-size:12px; color:var(--text-secondary); font-weight:600; margin-right:4px;}
+  select{
+    background:var(--surface-1); color:var(--text-primary); border:1px solid var(--border-strong);
+    border-radius:7px; padding:5px 8px; font-size:13px;
+  }
+  .chip-group{display:flex;gap:6px;flex-wrap:wrap;}
+  .chip{
+    border:1px solid var(--border-strong); border-radius:999px; padding:4px 11px; font-size:12.5px;
+    cursor:pointer; background:var(--surface-1); color:var(--text-secondary); display:flex; align-items:center; gap:6px;
+  }
+  .chip .sw{width:9px;height:9px;border-radius:2px;}
+  .chip.off{opacity:.4;}
+
+  .kpi-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px; margin-bottom:20px;}
+  .kpi{
+    background:var(--surface-1); border:1px solid var(--border); border-radius:12px; padding:16px 18px;
+  }
+  .kpi .label{font-size:12px;color:var(--text-secondary);font-weight:600;text-transform:uppercase;letter-spacing:.02em;margin-bottom:8px;}
+  .kpi .value{font-size:26px;font-weight:700;line-height:1;margin-bottom:6px;}
+  .kpi .delta{font-size:12.5px;font-weight:600;}
+  .kpi .delta.up-bad{color:var(--status-critical);}
+  .kpi .delta.down-good{color:var(--status-good);}
+  .kpi .delta.neutral{color:var(--text-muted);}
+  .kpi .sub{font-size:11.5px;color:var(--text-muted);margin-top:4px;}
+
+  .panel{
+    background:var(--surface-1); border:1px solid var(--border); border-radius:12px;
+    padding:18px 20px 16px; margin-bottom:18px;
+  }
+  .panel-head{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;margin-bottom:4px;}
+  .panel h2{font-size:15px;margin:0 0 2px;font-weight:700;}
+  .panel .desc{font-size:12px;color:var(--text-muted);margin:0 0 12px;max-width:640px;}
+  .panel-tools{display:flex;gap:6px;}
+  .btn-sm{
+    background:var(--surface-2); border:1px solid var(--border); color:var(--text-secondary);
+    border-radius:7px; padding:4px 10px; font-size:11.5px; cursor:pointer; font-weight:600;
+  }
+  .btn-sm.active{background:var(--text-primary);color:var(--surface-1);}
+
+  .grid-2{display:grid; grid-template-columns:1.4fr 1fr; gap:18px;}
+  @media (max-width:900px){ .grid-2{grid-template-columns:1fr;} }
+
+  .legend{display:flex;gap:16px;flex-wrap:wrap;margin:2px 0 10px;}
+  .legend-item{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-secondary);}
+  .legend-sw{width:10px;height:10px;border-radius:2px;flex:none;}
+
+  svg{display:block;overflow:visible;}
+  .axis-text{fill:var(--text-muted); font-size:10.5px;}
+  .grid-line{stroke:var(--grid); stroke-width:1;}
+  .bar-label{fill:var(--text-secondary); font-size:10px; font-weight:600;}
+  .total-label{fill:var(--text-primary); font-size:10.5px; font-weight:700;}
+
+  .tooltip{
+    position:fixed; pointer-events:none; z-index:50;
+    background:var(--surface-1); border:1px solid var(--border-strong); border-radius:8px;
+    padding:8px 11px; font-size:12px; color:var(--text-primary); box-shadow:0 6px 20px rgba(0,0,0,.18);
+    max-width:240px; opacity:0; transition:opacity .08s; line-height:1.5;
+  }
+  .tooltip .t-title{font-weight:700;margin-bottom:3px;}
+  .tooltip .t-row{display:flex;justify-content:space-between;gap:14px;color:var(--text-secondary);}
+  .tooltip .t-row .v{color:var(--text-primary);font-weight:600;font-variant-numeric:tabular-nums;}
+
+  table.data-table{width:100%;border-collapse:collapse;font-size:12.5px;}
+  table.data-table th{
+    text-align:right; padding:7px 10px; color:var(--text-muted); font-weight:600; font-size:11px;
+    text-transform:uppercase; letter-spacing:.02em; border-bottom:1px solid var(--border-strong);
+    white-space:nowrap;
+  }
+  table.data-table th:first-child, table.data-table td:first-child{text-align:left;}
+  table.data-table td{padding:7px 10px; border-bottom:1px solid var(--border); font-variant-numeric:tabular-nums; text-align:right;}
+  table.data-table tbody tr:hover{background:var(--surface-2);}
+  table.data-table td.num{font-weight:600;}
+
+  .hidden{display:none !important;}
+
+  .two-col-tables{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+  @media (max-width:900px){ .two-col-tables{grid-template-columns:1fr;} }
+
+  .flag-list{display:flex;flex-direction:column;gap:8px;margin-top:10px;}
+  .flag{
+    display:flex; gap:10px; align-items:flex-start; padding:10px 12px; border-radius:8px;
+    background:var(--surface-2); border:1px solid var(--border); font-size:12.5px; color:var(--text-secondary);
+  }
+  .flag .icon{color:var(--status-warning); font-weight:700; flex:none;}
+  .flag b{color:var(--text-primary);}
+
+  footer{margin-top:28px; font-size:11.5px; color:var(--text-muted); text-align:center;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div>
+      <h1>Cost of Poor Quality</h1>
+      <p class="subtitle">Board Review · FY2023–FY2026 (fiscal year begins Oct 1) · Report run <span id="reportDate">—</span></p>
+    </div>
+    <div class="top-actions">
+      <button class="pill" id="themeToggle">Dark mode</button>
+      <button class="pill" id="tableToggle">Table view</button>
+    </div>
+  </header>
+  
+
+
+  <div class="filters">
+    <label for="rangeSelect">Quarter range</label>
+    <select id="rangeSelect">
+      <option value="16">All 16 quarters (FY23–FY26)</option>
+      <option value="8" selected>Last 8 quarters (FY25–FY26)</option>
+      <option value="4">Last 4 quarters (FY26)</option>
+    </select>
+    <div class="chip-group" id="categoryChips"></div>
+  </div>
+
+  <div class="kpi-grid" id="kpiGrid"></div>
+
+  <div class="panel">
+    <div class="panel-head">
+      <div>
+        <h2>Quarterly COPQ by category</h2>
+        <p class="desc">Stacked cost per fiscal quarter across Warranty, Rework, and Rush Charges (the workbook's official categories). Bar height is the total COPQ for that quarter.</p>
+      </div>
+    </div>
+    <div class="legend" id="trendLegend"></div>
+    <div id="trendChart"></div>
+    <table class="data-table hidden" id="trendTable"></table>
+  </div>
+
+  <div class="grid-2">
+    <div class="panel">
+      <div class="panel-head">
+        <div>
+          <h2>Year-over-year, same fiscal quarter</h2>
+          <p class="desc">Each of the last 4 quarters vs. the same quarter one year earlier.</p>
+        </div>
+      </div>
+      <div class="legend" id="yoyLegend"></div>
+      <div id="yoyChart"></div>
+      <table class="data-table hidden" id="yoyTable"></table>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <div>
+          <h2>Category mix (16-quarter total)</h2>
+          <p class="desc">Share of total COPQ by category, FY23–FY26.</p>
+        </div>
+      </div>
+      <div id="mixChart"></div>
+      <table class="data-table hidden" id="mixTable"></table>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head">
+      <div>
+        <h2>Kill charges &amp; bad debts — supplementary, not part of official COPQ</h2>
+        <p class="desc">Kill charges (cancelled/aborted job costs) and bad debts are tracked separately in the workbook and excluded from the official COPQ total above. Shown here for board visibility because of a large one-off swing.</p>
+      </div>
+    </div>
+    <div class="legend" id="killLegend"></div>
+    <div id="killChart"></div>
+    <div class="flag-list" id="killFlags"></div>
+    <table class="data-table hidden" id="killTable"></table>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head">
+      <div>
+        <h2>Top clients &amp; jobs by cost</h2>
+        <p class="desc">From job/client-level detail, 2025-Q1 through 2026-Q4 only (see data note above). Excludes Kill charges.</p>
+      </div>
+    </div>
+    <div class="two-col-tables">
+      <div>
+        <h3 style="font-size:12.5px;color:var(--text-secondary);margin:4px 0 8px;">Top 10 clients</h3>
+        <div id="clientsChart"></div>
+      </div>
+      <div>
+        <h3 style="font-size:12.5px;color:var(--text-secondary);margin:4px 0 8px;">Top 10 jobs</h3>
+        <table class="data-table" id="jobsTable"></table>
+      </div>
+    </div>
+  </div>
+
+  <footer>Built from the workbook's Summary, Warranty Summary_, Rework Summary_, Kill Summary, Rush Charges Summary, and Bad Debts sheets. Fiscal year starts October 1.</footer>
+</div>
+
+<div class="tooltip" id="tooltip"></div>
+
+<script id="copq-data" type="application/json">
+{"quarters": ["2023-Q1", "2023-Q2", "2023-Q3", "2023-Q4", "2024-Q1", "2024-Q2", "2024-Q3", "2024-Q4", "2025-Q1", "2025-Q2", "2025-Q3", "2025-Q4", "2026-Q1", "2026-Q2", "2026-Q3", "2026-Q4"], "category_quarterly": {"Warranty Jobs": [23273.33, 209.5, 41934.44, 39160.36, 11559.17, 10447.3, 1830.51, 37161.77, 72491.15, 22168.2, 29522.21, 17894.61, 990.64, 10612.72, 28538.99, 14638.09], "Rework MF": [50187.32, 47873.33, 74356.94, 82283.73, 84375.29, 50497.51, 72003.11, -10993.24, 38789.65, 36215.14, 11339.22, 36548.47, 16804.91, 85213.89, 169830.69, 66034.83], "Rework FS": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "Internal Changes": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "Rush Charges": [0.0, 109.7, 50.0, -159.7, 657.6, 8493.13, -3617.84, 306.52, 270.0, 35.0, 2576.94, 774.89, 110.9, 3755.47, 3596.39, 465.0]}, "totals_quarterly": [73460.65, 48192.53, 116341.38, 121284.39, 96592.06, 69437.94, 70215.78, 26475.05, 111550.8, 58418.34, 43438.37, 55217.97, 17906.45, 99582.08, 201966.07, 81137.92], "kill_quarterly": [6683.65, 2459.0, 6112.27, 6903.51, 0, 0, 0, 341020.34, -226838.5, 0.01, 85.51, 0, 0, 0, 0, 0], "bad_debts_quarterly": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 130.04, 0, 0, 0, 0], "categories": ["Warranty Jobs", "Rework MF", "Rework FS", "Internal Changes", "Rush Charges"], "fy_totals": {"2023": 359278.95, "2024": 262720.83, "2025": 268625.48, "2026": 400592.52}, "current_fy": "2026", "fy_to_date_total": 400592.52, "trailing4_sum": 400592.52, "prior4_sum": 268625.48, "trailing4_change_pct": 49.1, "yoy": [{"quarter": "2026-Q1", "current": 17906.45, "prior_year": 111550.8, "prior_quarter_label": "2025-Q1", "pct_change": -83.9}, {"quarter": "2026-Q2", "current": 99582.08, "prior_year": 58418.34, "prior_quarter_label": "2025-Q2", "pct_change": 70.5}, {"quarter": "2026-Q3", "current": 201966.07, "prior_year": 43438.37, "prior_quarter_label": "2025-Q3", "pct_change": 364.9}, {"quarter": "2026-Q4", "current": 81137.92, "prior_year": 55217.97, "prior_quarter_label": "2025-Q4", "pct_change": 46.9}], "category_mix": [{"quarter": "2023-Q1", "Warranty Jobs": 23273.33, "Warranty Jobs_pct": 31.7, "Rework MF": 50187.32, "Rework MF_pct": 68.3, "Rework FS": 0.0, "Rework FS_pct": 0.0, "Internal Changes": 0.0, "Internal Changes_pct": 0.0, "Rush Charges": 0.0, "Rush Charges_pct": 0.0}, {"quarter": "2023-Q2", "Warranty Jobs": 209.5, "Warranty Jobs_pct": 0.4, "Rework MF": 47873.33, "Rework MF_pct": 99.3, "Rework FS": 0.0, "Rework FS_pct": 0.0, "Internal Changes": 0.0, "Internal Changes_pct": 0.0, "Rush Charges": 109.7, "Rush Charges_pct": 0.2}, {"quarter": "2023-Q3", "Warranty Jobs": 41934.44, "Warranty Jobs_pct": 36.0, "Rework MF": 74356.94, "Rework MF_pct": 63.9, "Rework FS": 0.0, "Rework FS_pct": 0.0, "Internal Changes": 0.0, "Internal Changes_pct": 0.0, "Rush Charges": 50.0, "Rush Charges_pct": 0.0}, {"quarter": "2023-Q4", "Warranty Jobs": 39160.36, "Warranty Jobs_pct": 32.3, "Rework MF": 82283.73, "Rework MF_pct": 67.8, "Rework FS": 0.0, "Rework FS_pct": 0.0, "Internal Changes": 0.0, "Internal Changes_pct": 0.0, "Rush Charges": -159.7, "Rush Charges_pct": -0.1}, {"quarter": "2024-Q1", "Warranty Jobs": 11559.17, "Warranty Jobs_pct": 12.0, "Rework MF": 84375.29, "Rework MF_pct": 87.4, "Rework FS": 0.0, "Rework FS_pct": 0.0, "Internal Changes": 0.0, "Internal Changes_pct": 0.0, "Rush Charges": 657.6, "Rush Charges_pct": 0.7}, {"quarter": "2024-Q2", "Warranty Jobs": 10447.3, "Warranty Jobs_pct": 15.0, "Rework MF": 50497.51, "Rework MF_pct": 72.7, "Rework FS": 0.0, "Rework FS_pct": 0.0, "Internal Changes": 0.0, "Internal Changes_pct": 0.0, "Rush Charges": 8493.13, "Rush Charges_pct": 12.2}, {"quarter": "2024-Q3", "Warranty Jobs": 1830.51, "Warranty Jobs_pct": 2.6, "Rework MF": 72003.11, "Rework MF_pct": 102.5, "Rework FS": 0.0, "Rework FS_pct": 0.0, "Internal Changes": 0.0, "Internal Changes_pct": 0.0, "Rush Charges": -3617.84, "Rush Charges_pct": -5.2}, {"quarter": "2024-Q4", "Warranty Jobs": 37161.77, "Warranty Jobs_pct": 140.4, "Rework MF": -10993.24, "Rework MF_pct": -41.5, "Rework FS": 0.0, "Rework FS_pct": 0.0, "Internal Changes": 0.0, "Internal Changes_pct": 0.0, "Rush Charges": 306.52, "Rush Charges_pct": 1.2}, {"quarter": "2025-Q1", "Warranty Jobs": 72491.15, "Warranty Jobs_pct": 65.0, "Rework MF": 38789.65, "Rework MF_pct": 34.8, "Rework FS": 0.0, "Rework FS_pct": 0.0, "Internal Changes": 0.0, "Internal Changes_pct": 0.0, "Rush Charges": 270.0, "Rush Charges_pct": 0.2}, {"quarter": "2025-Q2", "Warranty Jobs": 22168.2, "Warranty Jobs_pct": 37.9, "Rework MF": 36215.14, "Rework MF_pct": 62.0, "Rework FS": 0.0, "Rework FS_pct": 0.0, "Internal Changes": 0.0, "Internal Changes_pct": 0.0, "Rush Charges": 35.0, "Rush Charges_pct": 0.1}, {"quarter": "2025-Q3", "Warranty Jobs": 29522.21, "Warranty Jobs_pct": 68.0, "Rework MF": 11339.22, "Rework MF_pct": 26.1, "Rework FS": 0.0, "Rework FS_pct": 0.0, "Internal Changes": 0.0, "Internal Changes_pct": 0.0, "Rush Charges": 2576.94, "Rush Charges_pct": 5.9}, {"quarter": "2025-Q4", "Warranty Jobs": 17894.61, "Warranty Jobs_pct": 32.4, "Rework MF": 36548.47, "Rework MF_pct": 66.2, "Rework FS": 0.0, "Rework FS_pct": 0.0, "Internal Changes": 0.0, "Internal Changes_pct": 0.0, "Rush Charges": 774.89, "Rush Charges_pct": 1.4}, {"quarter": "2026-Q1", "Warranty Jobs": 990.64, "Warranty Jobs_pct": 5.5, "Rework MF": 16804.91, "Rework MF_pct": 93.8, "Rework FS": 0.0, "Rework FS_pct": 0.0, "Internal Changes": 0.0, "Internal Changes_pct": 0.0, "Rush Charges": 110.9, "Rush Charges_pct": 0.6}, {"quarter": "2026-Q2", "Warranty Jobs": 10612.72, "Warranty Jobs_pct": 10.7, "Rework MF": 85213.89, "Rework MF_pct": 85.6, "Rework FS": 0.0, "Rework FS_pct": 0.0, "Internal Changes": 0.0, "Internal Changes_pct": 0.0, "Rush Charges": 3755.47, "Rush Charges_pct": 3.8}, {"quarter": "2026-Q3", "Warranty Jobs": 28538.99, "Warranty Jobs_pct": 14.1, "Rework MF": 169830.69, "Rework MF_pct": 84.1, "Rework FS": 0.0, "Rework FS_pct": 0.0, "Internal Changes": 0.0, "Internal Changes_pct": 0.0, "Rush Charges": 3596.39, "Rush Charges_pct": 1.8}, {"quarter": "2026-Q4", "Warranty Jobs": 14638.09, "Warranty Jobs_pct": 18.0, "Rework MF": 66034.83, "Rework MF_pct": 81.4, "Rework FS": 0.0, "Rework FS_pct": 0.0, "Internal Changes": 0.0, "Internal Changes_pct": 0.0, "Rush Charges": 465.0, "Rush Charges_pct": 0.6}], "category_totals_all": {"Warranty Jobs": 362432.99, "Rework MF": 911360.79, "Rework FS": 0.0, "Internal Changes": 0.0, "Rush Charges": 17424.0}, "grand_total": 1291217.78, "avg_quarterly": 80701.11, "top_clients": [{"client": "REV USA Voltagrid", "cost": 176350.78}, {"client": "Voltagrid", "cost": 78353.08}, {"client": "Worley - Syncrude", "cost": 63208.47}, {"client": "Applied Digital", "cost": 26580.47}, {"client": "D-Com Energy Solutions", "cost": 21273.31}, {"client": "Worley", "cost": 20440.41}, {"client": "FortHills", "cost": 18512.8}, {"client": "Veren Partnership", "cost": 16829.92}, {"client": "DSC Dredge", "cost": 16666.55}, {"client": "St Mary River Irrigation District", "cost": 15892.3}], "top_jobs": [{"job": "M200354-06W", "cost": 63208.47, "client": "Worley - Syncrude", "description": "72kV Skid Mounted Substation Warranty"}, {"job": "M200468-04", "cost": 62019.68, "client": "REV USA Voltagrid", "description": "M400015-04 - ICB 35kV Breakers Cells (82)"}, {"job": "M200468-03", "cost": 49163.43, "client": "REV USA Voltagrid", "description": "M400015-03 - 35kV FCB (18)"}, {"job": "M200468-02", "cost": 42752.62, "client": "REV USA Voltagrid", "description": "M400015-02 - 15kV GCB Version C Line Up (46)"}, {"job": "M400015-01", "cost": 31575.83, "client": "Voltagrid", "description": "M200468-01 15kV Gen. Breaker Skid"}, {"job": "M400015-04W", "cost": 19947.94, "client": "Voltagrid", "description": "M200468-04 - ICB 35kV Breaker Cells"}, {"job": "M200338-01W", "cost": 18512.8, "client": "FortHills", "description": "Isolation Skid"}, {"job": "M200456-01", "cost": 16829.92, "client": "Veren Partnership", "description": "4160V Switchgear (04-17-069-03W6 - GCE Oil Battery"}, {"job": "M200380-01", "cost": 15892.3, "client": "St Mary River Irrigation District", "description": "40 Mile 5kV Main Breaker Retro-Fit"}, {"job": "M200482-01", "cost": 14967.71, "client": "Worley", "description": "25kV Breaker Skids (2)"}], "kill_flags": [{"quarter": "2024-Q4", "amount": 341020.34}, {"quarter": "2025-Q1", "amount": -226838.5}], "detail_quarters_available": ["2025-Q1", "2025-Q2", "2025-Q3", "2025-Q4", "2026-Q1", "2026-Q2", "2026-Q3", "2026-Q4"], "detail": [{"quarter": "2026-Q4", "job": "M200436-01W", "client": "TL&T Electric Ltd.", "description": "2MVA Unit Substation", "cost": -3884.21, "category": "Warranty Jobs"}, {"quarter": "2026-Q4", "job": "M400017-01W", "client": "Voltagrid", "description": "M200480-01 - 1200A, 40kA ICB", "cost": 997.5, "category": "Warranty Jobs"}, {"quarter": "2026-Q4", "job": "M400015-03W", "client": "Voltagrid", "description": "M200468-03 - 35kV FCB", "cost": 948.79, "category": "Warranty Jobs"}, {"quarter": "2026-Q4", "job": "M400015-04W", "client": "Voltagrid", "description": "M200468-04 - ICB 35kV Breaker Cells", "cost": 10385.93, "category": "Warranty Jobs"}, {"quarter": "2026-Q4", "job": "M400015-02W", "client": "Voltagrid", "description": "M200468-02 - 15kV GCB Version C line-ups", "cost": 4041.88, "category": "Warranty Jobs"}, {"quarter": "2026-Q4", "job": "M400017-02W", "client": "Voltagrid", "description": "M200480-02 - 2000A, 40kA FCB", "cost": 352.5, "category": "Warranty Jobs"}, {"quarter": "2026-Q4", "job": "M400017-03W", "client": "Voltagrid", "description": "M200480-03 1200A, 40kA GCB", "cost": 470.0, "category": "Warranty Jobs"}, {"quarter": "2026-Q3", "job": "M200436-01W", "client": "TL&T Electric Ltd.", "description": "2MVA Unit Substation", "cost": 220.0, "category": "Warranty Jobs"}, {"quarter": "2026-Q3", "job": "M200361-01W", "client": "Graybar Canada", "description": "Indicator Light Bulbs (Pilot Lights)", "cost": 1199.0, "category": "Warranty Jobs"}, {"quarter": "2026-Q3", "job": "M400007-01W", "client": "Applied Digital", "description": "6000A Breaker - Warranty", "cost": 11480.14, "category": "Warranty Jobs"}, {"quarter": "2026-Q3", "job": "M400017-01W", "client": "Voltagrid", "description": "M200480-01 - 1200A, 40kA ICB", "cost": 100.2, "category": "Warranty Jobs"}, {"quarter": "2026-Q3", "job": "M400015-03W", "client": "Voltagrid", "description": "M200468-03 - 35kV FCB", "cost": 2109.89, "category": "Warranty Jobs"}, {"quarter": "2026-Q3", "job": "M400015-04W", "client": "Voltagrid", "description": "M200468-04 - ICB 35kV Breaker Cells", "cost": 9562.01, "category": "Warranty Jobs"}, {"quarter": "2026-Q3", "job": "M400015-02W", "client": "Voltagrid", "description": "M200468-02 - 15kV GCB Version C line-ups", "cost": 2173.75, "category": "Warranty Jobs"}, {"quarter": "2026-Q2", "job": "M200436-01W", "client": "TL&T Electric Ltd.", "description": "2MVA Unit Substation", "cost": 150.33, "category": "Warranty Jobs"}, {"quarter": "2026-Q2", "job": "M200460-01W", "client": "All Type Electric", "description": "Banff WWTP Main Electrical Switchgear Upgrades", "cost": 1149.5, "category": "Warranty Jobs"}, {"quarter": "2026-Q2", "job": "M200361-01W", "client": "Graybar Canada", "description": "Indicator Light Bulbs (Pilot Lights)", "cost": 3836.8, "category": "Warranty Jobs"}, {"quarter": "2026-Q1", "job": "M200436-01W", "client": "TL&T Electric Ltd.", "description": "2MVA Unit Substation", "cost": 330.0, "category": "Warranty Jobs"}, {"quarter": "2025-Q4", "job": "M200415-01W", "client": "Robertson Electric", "description": "Admar Phase 1 Switchgear", "cost": 4573.89, "category": "Warranty Jobs"}, {"quarter": "2025-Q4", "job": "M200449-01W", "client": "Propell", "description": "15kV Generator Switchgear & NGR - Warranty", "cost": -1366.82, "category": "Warranty Jobs"}, {"quarter": "2025-Q3", "job": "M200338-01W", "client": "FortHills", "description": "Isolation Skid", "cost": 18512.8, "category": "Warranty Jobs"}, {"quarter": "2025-Q3", "job": "M200354-06W", "client": "Worley - Syncrude", "description": "72kV Skid Mounted Substation Warranty", "cost": -1425.88, "category": "Warranty Jobs"}, {"quarter": "2025-Q3", "job": "M200355-04W", "client": "REV USA Corp", "description": "Outdoor Switchgear 6000A, 415/240V - Warrranty", "cost": 0.01, "category": "Warranty Jobs"}, {"quarter": "2025-Q3", "job": "M200449-01W", "client": "Propell", "description": "15kV Generator Switchgear & NGR - Warranty", "cost": 1368.78, "category": "Warranty Jobs"}, {"quarter": "2025-Q2", "job": "F101510-02W", "client": "Canadian Pacific Kansas City Rail", "description": "F101014-05 NCR 1359185", "cost": 3720.67, "category": "Warranty Jobs"}, {"quarter": "2025-Q2", "job": "M200278-01W", "client": "Graham Industrial Services", "description": "North Stilling Well Warranty", "cost": 768.94, "category": "Warranty Jobs"}, {"quarter": "2025-Q2", "job": "M200339-04W", "client": "Cipher Mining Technologies Inc.", "description": "2.5MVA, 34.5kV-480V Transformer Skid", "cost": 11951.32, "category": "Warranty Jobs"}, {"quarter": "2025-Q2", "job": "M200354-06W", "client": "Worley - Syncrude", "description": "72kV Skid Mounted Substation Warranty", "cost": -802.71, "category": "Warranty Jobs"}, {"quarter": "2025-Q2", "job": "M200376-01W", "client": "Robertson Electric Wholesale", "description": "600A Metal Enclosed Breaker Warranty", "cost": 696.25, "category": "Warranty Jobs"}, {"quarter": "2025-Q2", "job": "M200377-01W", "client": "Robertson Electric Wholesale", "description": "25kv BC Hydro SG. 6 cells. 1 x 25 KV Load break SW", "cost": 2433.98, "category": "Warranty Jobs"}, {"quarter": "2025-Q2", "job": "M200393-03W", "client": "Applied Digital", "description": "Jamestown On-Site Trouble Shooting", "cost": 0.0, "category": "Warranty Jobs"}, {"quarter": "2025-Q2", "job": "M200401-01W", "client": "Robertson Electric Wholesale", "description": "Dania Seniors Housing Switchgear Warranty", "cost": 696.25, "category": "Warranty Jobs"}, {"quarter": "2025-Q1", "job": "M200354-06W", "client": "Worley - Syncrude", "description": "72kV Skid Mounted Substation Warranty", "cost": 65437.06, "category": "Warranty Jobs"}, {"quarter": "2025-Q1", "job": "M200370-01W", "client": "Wood - Forthills", "description": "15 kV, 1200 A Metal Clad Switchgear - Warranty", "cost": 2919.99, "category": "Warranty Jobs"}, {"quarter": "2025-Q1", "job": "M200376-01W", "client": "Robertson Electric Wholesale", "description": "600A Metal Enclosed Breaker Warranty", "cost": 390.0, "category": "Warranty Jobs"}, {"quarter": "2025-Q1", "job": "M200377-01W", "client": "Robertson Electric Wholesale", "description": "25kv BC Hydro SG. 6 cells. 1 x 25 KV Load break SW", "cost": 569.58, "category": "Warranty Jobs"}, {"quarter": "2025-Q1", "job": "M200401-01W", "client": "Robertson Electric Wholesale", "description": "Dania Seniors Housing Switchgear Warranty", "cost": 26.71, "category": "Warranty Jobs"}, {"quarter": "2026-Q4", "job": "M200468-04", "client": "REV USA Voltagrid", "description": "M400015-04 - ICB 35kV Breakers Cells (82)", "cost": 3634.39, "category": "Rework MF"}, {"quarter": "2026-Q4", "job": "M200469-01", "client": "Full Spectrum Projects", "description": "13.8kV Switchgear", "cost": 5416.2, "category": "Rework MF"}, {"quarter": "2026-Q4", "job": "M200468-03", "client": "REV USA Voltagrid", "description": "M400015-03 - 35kV FCB (18)", "cost": 0.0, "category": "Rework MF"}, {"quarter": "2026-Q4", "job": "M200473-01", "client": "Graham Infrastructure", "description": "Skid Mounted 15kV Switchgear (1)", "cost": 5632.39, "category": "Rework MF"}, {"quarter": "2026-Q4", "job": "M200482-01", "client": "Worley", "description": "25kV Breaker Skids (2)", "cost": 14221.31, "category": "Rework MF"}, {"quarter": "2026-Q4", "job": "M200489-02", "client": "Tesla Motors ULC", "description": "V4 Cabinet Switchboard - B1 Variant", "cost": 200.0, "category": "Rework MF"}, {"quarter": "2026-Q4", "job": "M200489-04", "client": "Tesla Motors ULC", "description": "V4 Cabinet Switchboard - C2 Variant", "cost": 1124.67, "category": "Rework MF"}, {"quarter": "2026-Q4", "job": "M200462-01", "client": "Custom Electric Ltd.", "description": "PLB-MV1 25kV Switchgear Line-Up", "cost": 816.0, "category": "Rework MF"}, {"quarter": "2026-Q4", "job": "M200462-03", "client": "Custom Electric Ltd.", "description": "PLB-MV3 25kV 4-Cell Disconnect Switchgear", "cost": 2170.0, "category": "Rework MF"}, {"quarter": "2026-Q4", "job": "M400015-02", "client": "Voltagrid", "description": "M200468-02 - 15kV GCB Version C line-ups (46)", "cost": 352.5, "category": "Rework MF"}, {"quarter": "2026-Q4", "job": "M200462-02", "client": "Custom Electric Ltd.", "description": "PLB-MV2 25kV 5-Cell Disconnect Switchgear", "cost": 240.0, "category": "Rework MF"}, {"quarter": "2026-Q4", "job": "M200484-05", "client": "D-Com Energy Solutions", "description": "Deerfield MDP", "cost": 3760.0, "category": "Rework MF"}, {"quarter": "2026-Q4", "job": "M200480-03", "client": "REV USA Voltagrid", "description": "M400017-03 - 1200A, 40kA GCB (230)", "cost": 1072.23, "category": "Rework MF"}, {"quarter": "2026-Q4", "job": "M200483-02", "client": "D-Com Energy Solutions", "description": "Perry Farms MDP", "cost": 2285.0, "category": "Rework MF"}, {"quarter": "2026-Q4", "job": "M200480-02", "client": "REV USA Voltagrid", "description": "M400017-02 - 2000A, 40kA FCB (35)", "cost": 4609.42, "category": "Rework MF"}, {"quarter": "2026-Q4", "job": "M200483-03", "client": "D-Com Energy Solutions", "description": "Growtec MDP", "cost": 2055.0, "category": "Rework MF"}, {"quarter": "2026-Q4", "job": "M200505-01", "client": "Westburne", "description": "600V Switchgear (1)", "cost": 440.0, "category": "Rework MF"}, {"quarter": "2026-Q4", "job": "M200480-01", "client": "REV USA Voltagrid", "description": "M400017-01 - 1200A, 40kA ICB (280)", "cost": 2517.7, "category": "Rework MF"}, {"quarter": "2026-Q4", "job": "M200509-01", "client": "REV USA Voltagrid", "description": "M400026-01 480V & 208V Switchboards (1 each)", "cost": 2424.8, "category": "Rework MF"}, {"quarter": "2026-Q4", "job": "M200493-01", "client": "Mountain View Regional Water Commission", "description": "5kV Switchgear Assembly (1)", "cost": 1870.0, "category": "Rework MF"}, {"quarter": "2026-Q4", "job": "M400017-01", "client": "Voltagrid", "description": "M200480-01 - 1200A, 40kA ICB (280)", "cost": 582.5, "category": "Rework MF"}, {"quarter": "2026-Q4", "job": "M200500-01", "client": "Merlin Plastics Alberta Inc", "description": "MV Outdoor (1) & LV Indoor (1) Switchgears", "cost": 4077.0, "category": "Rework MF"}, {"quarter": "2026-Q4", "job": "M200538-01", "client": "Solun", "description": "NEMA 3R Enclosure (1)", "cost": 540.4, "category": "Rework MF"}, {"quarter": "2026-Q4", "job": "M200513-01", "client": "REV USA Compass Energy", "description": "M400027-01 - Close-Coupled Breakers (10)", "cost": 80.0, "category": "Rework MF"}, {"quarter": "2026-Q4", "job": "M200516-01", "client": "Compass Energy Systems", "description": "Close-Coupled Breaker Assembly (16)", "cost": 1610.0, "category": "Rework MF"}, {"quarter": "2026-Q4", "job": "M200524-01", "client": "Albesol", "description": "Ottawa University Metering Cells (2)", "cost": 904.0, "category": "Rework MF"}, {"quarter": "2026-Q4", "job": "M400027-01", "client": "Compass Energy Systems", "description": "M200513-01 - Bus-coupled Breakers (10)", "cost": 394.89, "category": "Rework MF"}, {"quarter": "2026-Q3", "job": "M200452-01", "client": "SUNCOR ENERGY OIL SANDS", "description": "Shovel Voltage Regulators (Qty 4)", "cost": 211.67, "category": "Rework MF"}, {"quarter": "2026-Q3", "job": "M200461-01", "client": "Suncor Energy Oil Sands Limited Partnership", "description": "7.2kV Unit Substation", "cost": 150.0, "category": "Rework MF"}, {"quarter": "2026-Q3", "job": "M200468-02", "client": "REV USA Voltagrid", "description": "M400015-02 - 15kV GCB Version C Line Up (46)", "cost": 26565.68, "category": "Rework MF"}, {"quarter": "2026-Q3", "job": "M200468-04", "client": "REV USA Voltagrid", "description": "M400015-04 - ICB 35kV Breakers Cells (82)", "cost": 44488.02, "category": "Rework MF"}, {"quarter": "2026-Q3", "job": "M200469-01", "client": "Full Spectrum Projects", "description": "13.8kV Switchgear", "cost": 440.0, "category": "Rework MF"}, {"quarter": "2026-Q3", "job": "M200479-01", "client": "CNRL Horizon", "description": "MineTek/IM14 Stepdown Transformer Feeder Skid (1)", "cost": 498.0, "category": "Rework MF"}, {"quarter": "2026-Q3", "job": "M400015-04", "client": "Voltagrid", "description": "M200480-01 - ICB 35kV Breaker Cells (82)", "cost": 9405.42, "category": "Rework MF"}, {"quarter": "2026-Q3", "job": "M200468-03", "client": "REV USA Voltagrid", "description": "M400015-03 - 35kV FCB (18)", "cost": 49163.43, "category": "Rework MF"}, {"quarter": "2026-Q3", "job": "M200497-01", "client": "REV Canada FS", "description": "F101600-01 Transformer Enclosure (1)", "cost": 280.0, "category": "Rework MF"}, {"quarter": "2026-Q3", "job": "M200473-01", "client": "Graham Infrastructure", "description": "Skid Mounted 15kV Switchgear (1)", "cost": 3483.28, "category": "Rework MF"}, {"quarter": "2026-Q3", "job": "M200482-01", "client": "Worley", "description": "25kV Breaker Skids (2)", "cost": 746.4, "category": "Rework MF"}, {"quarter": "2026-Q3", "job": "M200489-02", "client": "Tesla Motors ULC", "description": "V4 Cabinet Switchboard - B1 Variant", "cost": 42.33, "category": "Rework MF"}, {"quarter": "2026-Q3", "job": "M200475-01", "client": "The Vector Group", "description": "Cable Termination & Metering Cell", "cost": 620.0, "category": "Rework MF"}, {"quarter": "2026-Q3", "job": "M200489-01", "client": "Tesla Motors ULC", "description": "V4 Cabinet Switchboard - A1 Variant", "cost": 1750.15, "category": "Rework MF"}, {"quarter": "2026-Q3", "job": "M200489-04", "client": "Tesla Motors ULC", "description": "V4 Cabinet Switchboard - C2 Variant", "cost": 180.0, "category": "Rework MF"}, {"quarter": "2026-Q3", "job": "M200462-01", "client": "Custom Electric Ltd.", "description": "PLB-MV1 25kV Switchgear Line-Up", "cost": 7105.0, "category": "Rework MF"}, {"quarter": "2026-Q3", "job": "M200462-03", "client": "Custom Electric Ltd.", "description": "PLB-MV3 25kV 4-Cell Disconnect Switchgear", "cost": 3220.0, "category": "Rework MF"}, {"quarter": "2026-Q3", "job": "M400015-02", "client": "Voltagrid", "description": "M200468-02 - 15kV GCB Version C line-ups (46)", "cost": 544.5, "category": "Rework MF"}, {"quarter": "2026-Q3", "job": "M400015-03", "client": "Voltagrid", "description": "M200468-03 - 35kV FCB (18)", "cost": 3473.5, "category": "Rework MF"}, {"quarter": "2026-Q3", "job": "M200484-01", "client": "D-Com Energy Solutions", "description": "Home Site MDP", "cost": 5280.0, "category": "Rework MF"}, {"quarter": "2026-Q3", "job": "M200462-02", "client": "Custom Electric Ltd.", "description": "PLB-MV2 25kV 5-Cell Disconnect Switchgear", "cost": 1530.0, "category": "Rework MF"}, {"quarter": "2026-Q3", "job": "M200484-03", "client": "D-Com Energy Solutions", "description": "Hog Barn MDP", "cost": 3303.31, "category": "Rework MF"}, {"quarter": "2026-Q3", "job": "M200484-05", "client": "D-Com Energy Solutions", "description": "Deerfield MDP", "cost": 4590.0, "category": "Rework MF"}, {"quarter": "2026-Q3", "job": "M200480-03", "client": "REV USA Voltagrid", "description": "M400017-03 - 1200A, 40kA GCB (230)", "cost": 2480.0, "category": "Rework MF"}, {"quarter": "2026-Q2", "job": "M200439-01", "client": "CNRL Horizon", "description": "Horizon Mine Substation (1)", "cost": 401.1, "category": "Rework MF"}, {"quarter": "2026-Q2", "job": "M200449-03", "client": "Propell", "description": "15kV Generator Switchgear and NGR (QTY= 20)", "cost": 721.44, "category": "Rework MF"}, {"quarter": "2026-Q2", "job": "M200452-01", "client": "SUNCOR ENERGY OIL SANDS", "description": "Shovel Voltage Regulators (Qty 4)", "cost": 160.0, "category": "Rework MF"}, {"quarter": "2026-Q2", "job": "M200461-01", "client": "Suncor Energy Oil Sands Limited Partnership", "description": "7.2kV Unit Substation", "cost": 6241.86, "category": "Rework MF"}, {"quarter": "2026-Q2", "job": "M200463-01", "client": "AltaPro Electric", "description": "Skid Mounted Unit Substation", "cost": 1522.88, "category": "Rework MF"}, {"quarter": "2026-Q2", "job": "M200468-02", "client": "REV USA Voltagrid", "description": "M400015-02 - 15kV GCB Version C Line Up (46)", "cost": 16186.94, "category": "Rework MF"}, {"quarter": "2026-Q2", "job": "M200468-04", "client": "REV USA Voltagrid", "description": "M400015-04 - ICB 35kV Breakers Cells (82)", "cost": 13897.27, "category": "Rework MF"}, {"quarter": "2026-Q2", "job": "M200469-01", "client": "Full Spectrum Projects", "description": "13.8kV Switchgear", "cost": 1176.2, "category": "Rework MF"}, {"quarter": "2026-Q2", "job": "M200471-01", "client": "DSC Dredge", "description": "2300 KVA Dredge Mounted Substation (x2)", "cost": 7231.83, "category": "Rework MF"}, {"quarter": "2026-Q2", "job": "M400015-01", "client": "Voltagrid", "description": "M200468-01 15kV Gen. Breaker Skid", "cost": 31575.83, "category": "Rework MF"}, {"quarter": "2026-Q2", "job": "REV3033-03", "client": "REV", "description": "PT Drawer Swing Down Door (Qty 6) 3030007", "cost": 0.0, "category": "Rework MF"}, {"quarter": "2026-Q2", "job": "M200496-01", "client": "ABB", "description": "Transformer LV termination Boxes (2)", "cost": 400.0, "category": "Rework MF"}, {"quarter": "2026-Q2", "job": "M200478-01", "client": "ABB Inc.", "description": "5kV Junction Boxes (4)", "cost": 360.0, "category": "Rework MF"}, {"quarter": "2026-Q2", "job": "M200486-01", "client": "IE US Developments Holdings 3 Inc.", "description": "Block 1 Switchboard (1)", "cost": 470.14, "category": "Rework MF"}, {"quarter": "2026-Q2", "job": "M400015-04", "client": "Voltagrid", "description": "M200480-01 - ICB 35kV Breaker Cells (82)", "cost": 1276.38, "category": "Rework MF"}, {"quarter": "2026-Q1", "job": "M200430-01", "client": "Suncor Energy Services \u2013 Fort Hills", "description": "ABB Breaker Cell and Cable Entry Box (1)", "cost": 549.62, "category": "Rework MF"}, {"quarter": "2026-Q1", "job": "M200434-03", "client": "Journey Energy Inc.", "description": "25kV Outdoor Switchgear", "cost": 1010.99, "category": "Rework MF"}, {"quarter": "2026-Q1", "job": "M200439-01", "client": "CNRL Horizon", "description": "Horizon Mine Substation (1)", "cost": 1870.28, "category": "Rework MF"}, {"quarter": "2026-Q1", "job": "M200449-03", "client": "Propell", "description": "15kV Generator Switchgear and NGR (QTY= 20)", "cost": 820.21, "category": "Rework MF"}, {"quarter": "2026-Q1", "job": "M200452-01", "client": "SUNCOR ENERGY OIL SANDS", "description": "Shovel Voltage Regulators (Qty 4)", "cost": 1606.35, "category": "Rework MF"}, {"quarter": "2026-Q1", "job": "M200456-01", "client": "Veren Partnership", "description": "4160V Switchgear (04-17-069-03W6 - GCE Oil Battery", "cost": -1562.28, "category": "Rework MF"}, {"quarter": "2026-Q1", "job": "M200460-01", "client": "All Type Electric", "description": "Banff WWTP Main Electrical Switchgear Upgrades", "cost": -192.39, "category": "Rework MF"}, {"quarter": "2026-Q1", "job": "M200463-01", "client": "AltaPro Electric", "description": "Skid Mounted Unit Substation", "cost": 1040.0, "category": "Rework MF"}, {"quarter": "2026-Q1", "job": "M200468-01", "client": "REV USA Voltagrid", "description": "M400015-01 - 15kV. Gen. Breaker Skid (18)", "cost": 6488.05, "category": "Rework MF"}, {"quarter": "2026-Q1", "job": "M200469-01", "client": "Full Spectrum Projects", "description": "13.8kV Switchgear", "cost": 3672.96, "category": "Rework MF"}, {"quarter": "2026-Q1", "job": "M200471-01", "client": "DSC Dredge", "description": "2300 KVA Dredge Mounted Substation (x2)", "cost": 1426.12, "category": "Rework MF"}, {"quarter": "2025-Q4", "job": "M200428-01", "client": "Cipher Mining Technologies", "description": "Transformer skid (48)", "cost": 58.0, "category": "Rework MF"}, {"quarter": "2025-Q4", "job": "M200434-03", "client": "Journey Energy Inc.", "description": "25kV Outdoor Switchgear", "cost": 7855.28, "category": "Rework MF"}, {"quarter": "2025-Q4", "job": "M200438-03", "client": "DSC Dredge", "description": "600V, 800A LV Indoor Switchboard (Qty:1)", "cost": -1493.6, "category": "Rework MF"}, {"quarter": "2025-Q4", "job": "M200439-01", "client": "CNRL Horizon", "description": "Horizon Mine Substation (1)", "cost": 2423.04, "category": "Rework MF"}, {"quarter": "2025-Q4", "job": "M200445-01", "client": "EECOL Electric Corp.", "description": "600V Switchgear - Pad Mount - 1MVA LV Unit Sub", "cost": 189.0, "category": "Rework MF"}, {"quarter": "2025-Q4", "job": "M200456-01", "client": "Veren Partnership", "description": "4160V Switchgear (04-17-069-03W6 - GCE Oil Battery", "cost": 17512.2, "category": "Rework MF"}, {"quarter": "2025-Q4", "job": "M200459-01", "client": "Solvest", "description": "600V Switchgear", "cost": 2445.24, "category": "Rework MF"}, {"quarter": "2025-Q4", "job": "M200459-02", "client": "Solvest", "description": "750V Switchgear", "cost": 1158.06, "category": "Rework MF"}, {"quarter": "2025-Q4", "job": "M200460-01", "client": "All Type Electric", "description": "Banff WWTP Main Electrical Switchgear Upgrades", "cost": 1920.46, "category": "Rework MF"}, {"quarter": "2025-Q4", "job": "M200463-01", "client": "AltaPro Electric", "description": "Skid Mounted Unit Substation", "cost": 726.0, "category": "Rework MF"}, {"quarter": "2025-Q4", "job": "M200468-01", "client": "REV USA Voltagrid", "description": "M400015-01 - 15kV. Gen. Breaker Skid (18)", "cost": 2482.74, "category": "Rework MF"}, {"quarter": "2025-Q3", "job": "M200410-08", "client": "REV USA Corp (CAD $)", "description": "M400007-01 Unit Subs Skids (Qty 33)", "cost": 0.0, "category": "Rework MF"}, {"quarter": "2025-Q3", "job": "M200426-01", "client": "Suncor Energy Services - Fort Hills", "description": "72kV \u2013 13.8kV Shovel Substation including NGR (1)", "cost": 828.61, "category": "Rework MF"}, {"quarter": "2025-Q3", "job": "M200428-01", "client": "Cipher Mining Technologies", "description": "Transformer skid (48)", "cost": 327.47, "category": "Rework MF"}, {"quarter": "2025-Q3", "job": "M200436-01", "client": "TL&T Electric Ltd.", "description": "2MVA Unit Substation", "cost": 500.0, "category": "Rework MF"}, {"quarter": "2025-Q3", "job": "M200437-01", "client": "ABB - Burlington", "description": "Trailing Cable Connection Box (2)", "cost": 1720.76, "category": "Rework MF"}, {"quarter": "2025-Q3", "job": "M200438-01", "client": "DSC Dredge", "description": "600V, 800A LV Indoor Switchboard (Qty:1)", "cost": 665.81, "category": "Rework MF"}, {"quarter": "2025-Q3", "job": "M200438-02", "client": "DSC Dredge", "description": "600V, 800A LV Indoor Switchboard (Qty:1)", "cost": 920.41, "category": "Rework MF"}, {"quarter": "2025-Q3", "job": "M200438-03", "client": "DSC Dredge", "description": "600V, 800A LV Indoor Switchboard (Qty:1)", "cost": 3676.29, "category": "Rework MF"}, {"quarter": "2025-Q3", "job": "M200438-04", "client": "DSC Dredge", "description": "600V, 800A LV Indoor Switchboard (Qty:1)", "cost": 549.85, "category": "Rework MF"}, {"quarter": "2025-Q3", "job": "M200438-05", "client": "DSC Dredge", "description": "600V, 800A LV Indoor Switchboard (Qty:1)", "cost": 1128.17, "category": "Rework MF"}, {"quarter": "2025-Q3", "job": "M200439-01", "client": "CNRL Horizon", "description": "Horizon Mine Substation (1)", "cost": 2465.11, "category": "Rework MF"}, {"quarter": "2025-Q3", "job": "M200441-01", "client": "ABB - Burlington", "description": "5kV Grounding Disconnect Switches (4)", "cost": 840.52, "category": "Rework MF"}, {"quarter": "2025-Q3", "job": "M200442-01", "client": "Coalspur Mines (Operations) Ltd.", "description": "15kV 1200A 25kA 3R Switch Gear", "cost": 960.48, "category": "Rework MF"}, {"quarter": "2025-Q3", "job": "M200445-01", "client": "EECOL Electric Corp.", "description": "600V Switchgear - Pad Mount - 1MVA LV Unit Sub", "cost": 1140.95, "category": "Rework MF"}, {"quarter": "2025-Q3", "job": "M200449-01", "client": "Propell", "description": "15kV Generator Switchgear and NGR (QTY= 40)", "cost": 470.45, "category": "Rework MF"}, {"quarter": "2025-Q3", "job": "M200449-02", "client": "Propell", "description": "15kV Generator Switchgear and NGR (QTY= 19)", "cost": 2492.49, "category": "Rework MF"}, {"quarter": "2025-Q3", "job": "M200451-01", "client": "Solvest", "description": "Solar Energy Project - 800V 1200A Switchgear", "cost": 540.0, "category": "Rework MF"}, {"quarter": "2025-Q3", "job": "M200454-01", "client": "Albesol Energy", "description": "Customized Transition Cell (1)", "cost": 960.0, "category": "Rework MF"}, {"quarter": "2025-Q3", "job": "M200456-01", "client": "Veren Partnership", "description": "4160V Switchgear (04-17-069-03W6 - GCE Oil Battery", "cost": 880.0, "category": "Rework MF"}, {"quarter": "2025-Q3", "job": "M200458-01", "client": "AltaPro Electric", "description": "2 PT Rollout Stacked Enclosure", "cost": 440.0, "category": "Rework MF"}, {"quarter": "2025-Q3", "job": "M200459-01", "client": "Solvest", "description": "600V Switchgear", "cost": 5616.35, "category": "Rework MF"}, {"quarter": "2025-Q2", "job": "M200380-01", "client": "St Mary River Irrigation District", "description": "40 Mile 5kV Main Breaker Retro-Fit", "cost": 15892.3, "category": "Rework MF"}, {"quarter": "2025-Q2", "job": "M200410-05", "client": "REV USA Corp (CAD $)", "description": "M400007-01 Applied Enclosures Qty 5", "cost": 4137.73, "category": "Rework MF"}, {"quarter": "2025-Q2", "job": "M200410-06", "client": "REV USA Corp (CAD $)", "description": "M400007-01 35kV HVL Switches (33)", "cost": 300.0, "category": "Rework MF"}, {"quarter": "2025-Q2", "job": "M200420-01", "client": "Applied Digital", "description": "2000A UPS Bypass Panels (Qty. 16)", "cost": 580.08, "category": "Rework MF"}, {"quarter": "2025-Q2", "job": "M200420-02", "client": "Applied Digital", "description": "2000A UPS Bypass Panels (Qty. 16)", "cost": 919.5, "category": "Rework MF"}, {"quarter": "2025-Q2", "job": "M200420-03", "client": "Applied Digital", "description": "2000A UPS Bypass Panels (Qty. 16)", "cost": 577.5, "category": "Rework MF"}, {"quarter": "2025-Q2", "job": "M200420-04", "client": "Applied Digital", "description": "2000A UPS Bypass Panels (Qty. 16)", "cost": 919.5, "category": "Rework MF"}, {"quarter": "2025-Q2", "job": "M200420-05", "client": "Applied Digital", "description": "2000A UPS Bypass Panels (Qty. 16)", "cost": 919.5, "category": "Rework MF"}, {"quarter": "2025-Q2", "job": "M200420-06", "client": "Applied Digital", "description": "2000A UPS Bypass Panels (Qty. 16)", "cost": 876.75, "category": "Rework MF"}, {"quarter": "2025-Q2", "job": "M200420-07", "client": "Applied Digital", "description": "2000A UPS Bypass Panels (Qty. 16)", "cost": 1261.5, "category": "Rework MF"}, {"quarter": "2025-Q2", "job": "M200423-01", "client": "Aspen Properties", "description": "2000A Westinghouse DS-420 Breaker Retro Fit", "cost": 159.9, "category": "Rework MF"}, {"quarter": "2025-Q2", "job": "M200428-01", "client": "Cipher Mining Technologies", "description": "Transformer skid (48)", "cost": 462.7, "category": "Rework MF"}, {"quarter": "2025-Q2", "job": "M200429-01", "client": "Worley", "description": "72kV Substations 1-0PSUB72-355 (MX6)", "cost": 280.0, "category": "Rework MF"}, {"quarter": "2025-Q2", "job": "M200429-02", "client": "Worley", "description": "72kV Substations 1-0PSUB72-356 (MX7)", "cost": 3592.6, "category": "Rework MF"}, {"quarter": "2025-Q2", "job": "M200436-01", "client": "TL&T Electric Ltd.", "description": "2MVA Unit Substation", "cost": 350.0, "category": "Rework MF"}, {"quarter": "2025-Q2", "job": "M200437-01", "client": "ABB - Burlington", "description": "Trailing Cable Connection Box (2)", "cost": 381.76, "category": "Rework MF"}, {"quarter": "2025-Q2", "job": "M200438-01", "client": "DSC Dredge", "description": "600V, 800A LV Indoor Switchboard (Qty:1)", "cost": 1921.67, "category": "Rework MF"}, {"quarter": "2025-Q2", "job": "M200438-02", "client": "DSC Dredge", "description": "600V, 800A LV Indoor Switchboard (Qty:1)", "cost": 320.0, "category": "Rework MF"}, {"quarter": "2025-Q2", "job": "M200438-03", "client": "DSC Dredge", "description": "600V, 800A LV Indoor Switchboard (Qty:1)", "cost": 320.0, "category": "Rework MF"}, {"quarter": "2025-Q2", "job": "M200442-01", "client": "Coalspur Mines (Operations) Ltd.", "description": "15kV 1200A 25kA 3R Switch Gear", "cost": 83.2, "category": "Rework MF"}, {"quarter": "2025-Q2", "job": "M200449-01", "client": "Propell", "description": "15kV Generator Switchgear and NGR (QTY= 40)", "cost": 6556.8, "category": "Rework MF"}, {"quarter": "2025-Q2", "job": "REV3021-02", "client": "REV", "description": "Outdoor 35kV disconnect switch", "cost": -4701.65, "category": "Rework MF"}, {"quarter": "2025-Q1", "job": "M200410-05", "client": "REV USA Corp (CAD $)", "description": "M400007-01 Applied Enclosures Qty 5", "cost": 3219.72, "category": "Rework MF"}, {"quarter": "2025-Q1", "job": "M200410-06", "client": "REV USA Corp (CAD $)", "description": "M400007-01 35kV HVL Switches (33)", "cost": 4321.45, "category": "Rework MF"}, {"quarter": "2025-Q1", "job": "M200412-01", "client": "Ewel", "description": "U of A Student Union Building - 13.8kV Switchgear", "cost": 2025.0, "category": "Rework MF"}, {"quarter": "2025-Q1", "job": "M200420-01", "client": "Applied Digital", "description": "2000A UPS Bypass Panels (Qty. 16)", "cost": 6070.5, "category": "Rework MF"}, {"quarter": "2025-Q1", "job": "M200420-02", "client": "Applied Digital", "description": "2000A UPS Bypass Panels (Qty. 16)", "cost": 1795.5, "category": "Rework MF"}, {"quarter": "2025-Q1", "job": "M200420-05", "client": "Applied Digital", "description": "2000A UPS Bypass Panels (Qty. 16)", "cost": 40.0, "category": "Rework MF"}, {"quarter": "2025-Q1", "job": "M200420-06", "client": "Applied Digital", "description": "2000A UPS Bypass Panels (Qty. 16)", "cost": 40.0, "category": "Rework MF"}, {"quarter": "2025-Q1", "job": "M200420-07", "client": "Applied Digital", "description": "2000A UPS Bypass Panels (Qty. 16)", "cost": 249.6, "category": "Rework MF"}, {"quarter": "2025-Q1", "job": "M200420-08", "client": "Applied Digital", "description": "2000A UPS Bypass Panels (Qty. 16)", "cost": 166.4, "category": "Rework MF"}, {"quarter": "2025-Q1", "job": "M200422-01", "client": "Applied Digital", "description": "2000A 480V UPS Bypass Panels (Qty. 8)", "cost": 684.0, "category": "Rework MF"}, {"quarter": "2025-Q1", "job": "M200423-01", "client": "Aspen Properties", "description": "2000A Westinghouse DS-420 Breaker Retro Fit", "cost": 960.0, "category": "Rework MF"}, {"quarter": "2025-Q1", "job": "M200428-01", "client": "Cipher Mining Technologies", "description": "Transformer skid (48)", "cost": 12554.88, "category": "Rework MF"}, {"quarter": "2025-Q1", "job": "M200429-01", "client": "Worley", "description": "72kV Substations 1-0PSUB72-355 (MX6)", "cost": 1015.2, "category": "Rework MF"}, {"quarter": "2025-Q1", "job": "M200429-02", "client": "Worley", "description": "72kV Substations 1-0PSUB72-356 (MX7)", "cost": 584.9, "category": "Rework MF"}, {"quarter": "2025-Q1", "job": "M200432-01", "client": "Tubbesing Solutions LLC", "description": "4160V Manual Transfer Switch", "cost": 360.0, "category": "Rework MF"}, {"quarter": "2025-Q1", "job": "REV3021-02", "client": "REV", "description": "Outdoor 35kV disconnect switch", "cost": 4650.0, "category": "Rework MF"}, {"quarter": "2023-Q1", "job": "F101222-02K", "client": "Louisiana Pacific Corp", "description": "Breaker Supply for Retrofit", "cost": 449.65, "category": "Kill"}, {"quarter": "2023-Q1", "job": "M200356-01K", "client": "Worley-Syncrude", "description": "72kV Tie Breaker Skid (1) (Eng Only)", "cost": 6234.0, "category": "Kill"}, {"quarter": "2023-Q2", "job": "F101347-01K", "client": "Trotter & Morton", "description": "Klockner-Moeller MCC Bucket Manufacturing", "cost": 0.0, "category": "Kill"}, {"quarter": "2023-Q2", "job": "F101306-07K", "client": "Skyfire Energy Inc.", "description": "Brooks II 2023 Maintenance", "cost": 85.5, "category": "Kill"}, {"quarter": "2023-Q2", "job": "F101306-08 K", "client": "Skyfire Energy Inc.", "description": "Brooks Solar 2023 Maintenance", "cost": 85.5, "category": "Kill"}, {"quarter": "2023-Q2", "job": "M200356-01K", "client": "Worley-Syncrude", "description": "72kV Tie Breaker Skid (1) (Eng Only)", "cost": 2288.0, "category": "Kill"}, {"quarter": "2023-Q3", "job": "F101306-07K", "client": "Skyfire Energy Inc.", "description": "Brooks II 2023 Maintenance", "cost": 1170.0, "category": "Kill"}, {"quarter": "2023-Q3", "job": "F101310-11K", "client": "Canadian Pacific Rail", "description": "USE THIS JOB NUMBER NEXT", "cost": 85.5, "category": "Kill"}, {"quarter": "2023-Q3", "job": "M200356-01K", "client": "Worley-Syncrude", "description": "72kV Tie Breaker Skid (1) (Eng Only)", "cost": 4856.77, "category": "Kill"}, {"quarter": "2023-Q4", "job": "F101347-01K", "client": "Trotter & Morton", "description": "Klockner-Moeller MCC Bucket Manufacturing", "cost": 0.01, "category": "Kill"}, {"quarter": "2023-Q4", "job": "F101393-01K", "client": "Hitachi Powergrids", "description": "Copper Bus Material Supply", "cost": 85.5, "category": "Kill"}, {"quarter": "2023-Q4", "job": "F101288-65K", "client": "Primary Engineering", "description": "Cable & Transformer Testing", "cost": 85.5, "category": "Kill"}, {"quarter": "2023-Q4", "job": "M200356-01K", "client": "Worley-Syncrude", "description": "72kV Tie Breaker Skid (1) (Eng Only)", "cost": 6647.0, "category": "Kill"}, {"quarter": "2023-Q4", "job": "F101308-07K", "client": "Whitecap Resources Inc", "description": "SE-330 Firmware Update", "cost": 85.5, "category": "Kill"}, {"quarter": "2024-Q4", "job": "F101398-86K", "client": "Primary Engineering", "description": "Cable & Transformer Testing", "cost": 85.5, "category": "Kill"}, {"quarter": "2024-Q4", "job": "F101472-01K", "client": "Valard Construction", "description": "Cable and Transformer Testing", "cost": 85.5, "category": "Kill"}, {"quarter": "2024-Q4", "job": "M101448-04K", "client": "Brookfield Properties - Suncor Energy Centre", "description": "S3 Switchboard Replacement", "cost": 139820.62, "category": "Kill"}, {"quarter": "2024-Q4", "job": "M200444-01K", "client": "Applied Digital", "description": "Mircologic Spare Parts Supply (USD)", "cost": 8697.18, "category": "Kill"}, {"quarter": "2024-Q4", "job": "M101448-03K", "client": "Brookfield Properties - Suncor Energy Centre", "description": "S2 Switchboard Replacement", "cost": 192331.54, "category": "Kill"}, {"quarter": "2025-Q1", "job": "M200444-01K", "client": "Applied Digital", "description": "Mircologic Spare Parts Supply (USD)", "cost": -8199.09, "category": "Kill"}, {"quarter": "2025-Q1", "job": "M101448-03K", "client": "Brookfield Properties - Suncor Energy Centre", "description": "S2 Switchboard Replacement", "cost": -218639.41, "category": "Kill"}, {"quarter": "2025-Q2", "job": "F101502-02K", "client": "PTW Energy Services", "description": "Jan 4 Emergency Call Out", "cost": 0.01, "category": "Kill"}, {"quarter": "2025-Q3", "job": "M200467-01K", "client": "Voltagrid", "description": "15kV Gen. Breaker Skids", "cost": 0.01, "category": "Kill"}, {"quarter": "2025-Q3", "job": "F101543-03K", "client": "Martello Group", "description": "Arc flash and SLD Update", "cost": 85.5, "category": "Kill"}, {"quarter": "2025-Q1", "job": "M101448-04K", "client": "Brookfield Properties - Suncor Energy Centre", "description": "S3 Switchboard Replacement", "cost": 120.0, "category": "Rush Charges"}, {"quarter": "2025-Q3", "job": "M200454-01", "client": "Albesol Energy", "description": "Customized Transition Cell (1)", "cost": 1008.06, "category": "Rush Charges"}, {"quarter": "2025-Q4", "job": "M200434-03", "client": "Journey Energy Inc.", "description": "25kV Outdoor Switchgear", "cost": 465.67, "category": "Rush Charges"}, {"quarter": "2025-Q4", "job": "M200439-01", "client": "CNRL Horizon", "description": "Horizon Mine Substation (1)", "cost": 120.0, "category": "Rush Charges"}, {"quarter": "2025-Q4", "job": "F101515-01", "client": "Solun Ltd.", "description": "SEL 751 design and commissioning", "cost": 165.28, "category": "Rush Charges"}, {"quarter": "2026-Q2", "job": "M200498-02", "client": "Platinum Engineering Ltd.", "description": "MV Switchgear Unit 2 no PT (1)", "cost": 2566.7, "category": "Rush Charges"}, {"quarter": "2026-Q3", "job": "M200483-02", "client": "D-COM Energy Solutions", "description": "Perry Farms MDP", "cost": 641.82, "category": "Rush Charges"}, {"quarter": "2026-Q3", "job": "F301254-02", "client": "Cipher Mining", "description": "Field Install of PDU Modifications", "cost": 107.99, "category": "Rush Charges"}, {"quarter": "2026-Q3", "job": "M200509-01", "client": "REV USA Voltagrid", "description": "M400026-01 480V & 208V Switchboards (1 each)", "cost": 340.11, "category": "Rush Charges"}, {"quarter": "2026-Q3", "job": "F101579-10", "client": "Suncor Energy Syncrude Operating Inc", "description": "LIS Install", "cost": 2400.0, "category": "Rush Charges"}], "bad_debts": [{"date": "2025-07-22T00:00:00", "doc": "PIX40217", "description": "INTELLIRENT PO41312", "amount": 32.63, "quarter": "2025-Q4"}, {"date": "2025-07-24T00:00:00", "doc": "PIX40236", "description": "INTELLIRENT PO41312", "amount": 32.47, "quarter": "2025-Q4"}, {"date": "2025-07-24T00:00:00", "doc": "PIX40237", "description": "INTELLIRENT - field service", "amount": 32.47, "quarter": "2025-Q4"}, {"date": "2025-07-24T00:00:00", "doc": "PIX40600", "description": "INTELLIRENT PO41312 Job # cor.", "amount": 32.47, "quarter": "2025-Q4"}], "report_run_date": "2026-09-21T07:59:58.070000"}
+</script>
+<script>
+const DATA = JSON.parse(document.getElementById('copq-data').textContent);
+
+const CAT_COLORS = {
+  'Warranty Jobs': 'var(--series-1)',
+  'Rework MF': 'var(--series-2)',
+  'Rush Charges': 'var(--series-3)',
+};
+// only categories with any nonzero activity across the window
+const ACTIVE_CATS = DATA.categories.filter(c => DATA.category_totals_all[c] > 0);
+
+let state = {
+  range: 8,
+  activeCats: new Set(ACTIVE_CATS),
+  tableView: false,
+  theme: 'light',
+};
+
+function fmtMoney(v, compact){
+  const sign = v < 0 ? '-' : '';
+  v = Math.abs(v);
+  if (compact){
+    if (v >= 1000000) return sign + '$' + (v/1000000).toFixed(2) + 'M';
+    if (v >= 1000) return sign + '$' + (v/1000).toFixed(1) + 'K';
+    return sign + '$' + v.toFixed(0);
+  }
+  return sign + '$' + v.toLocaleString(undefined, {maximumFractionDigits:0});
+}
+function fmtPct(v){
+  if (v === null || v === undefined) return '—';
+  const sign = v > 0 ? '+' : '';
+  return sign + v.toFixed(1) + '%';
+}
+
+// ---------- theme ----------
+const themeBtn = document.getElementById('themeToggle');
+function applyTheme(){
+  document.documentElement.setAttribute('data-theme', state.theme);
+  themeBtn.textContent = state.theme === 'dark' ? 'Light mode' : 'Dark mode';
+}
+themeBtn.addEventListener('click', () => {
+  state.theme = state.theme === 'dark' ? 'light' : 'dark';
+  applyTheme();
+});
+applyTheme();
+
+// ---------- table toggle (global) ----------
+const tableBtn = document.getElementById('tableToggle');
+tableBtn.addEventListener('click', () => {
+  state.tableView = !state.tableView;
+  tableBtn.classList.toggle('active', state.tableView);
+  tableBtn.textContent = state.tableView ? 'Chart view' : 'Table view';
+  document.querySelectorAll('#trendChart, #yoyChart, #mixChart, #killChart').forEach(el => el.classList.toggle('hidden', state.tableView));
+  document.querySelectorAll('#trendTable, #yoyTable, #mixTable, #killTable').forEach(el => el.classList.toggle('hidden', !state.tableView));
+});
+
+// ---------- filters ----------
+document.getElementById('reportDate').textContent = new Date(DATA.report_run_date).toLocaleDateString(undefined, {year:'numeric', month:'long', day:'numeric'});
+
+const rangeSelect = document.getElementById('rangeSelect');
+rangeSelect.addEventListener('change', () => { state.range = parseInt(rangeSelect.value, 10); renderAll(); });
+
+const chipContainer = document.getElementById('categoryChips');
+ACTIVE_CATS.forEach(cat => {
+  const chip = document.createElement('div');
+  chip.className = 'chip';
+  chip.innerHTML = `<span class="sw" style="background:${CAT_COLORS[cat]}"></span>${cat}`;
+  chip.addEventListener('click', () => {
+    if (state.activeCats.has(cat)) { state.activeCats.delete(cat); chip.classList.add('off'); }
+    else { state.activeCats.add(cat); chip.classList.remove('off'); }
+    renderAll();
+  });
+  chipContainer.appendChild(chip);
+});
+
+// ---------- tooltip ----------
+const tooltipEl = document.getElementById('tooltip');
+function showTooltip(evt, html){
+  tooltipEl.innerHTML = html;
+  tooltipEl.style.opacity = '1';
+  positionTooltip(evt);
+}
+function positionTooltip(evt){
+  const pad = 14;
+  let x = evt.clientX + pad, y = evt.clientY + pad;
+  const rect = tooltipEl.getBoundingClientRect();
+  if (x + rect.width > window.innerWidth - 8) x = evt.clientX - rect.width - pad;
+  if (y + rect.height > window.innerHeight - 8) y = evt.clientY - rect.height - pad;
+  tooltipEl.style.left = x + 'px';
+  tooltipEl.style.top = y + 'px';
+}
+function hideTooltip(){ tooltipEl.style.opacity = '0'; }
+
+// ---------- KPI tiles ----------
+function renderKPIs(){
+  const g = document.getElementById('kpiGrid');
+  g.innerHTML = '';
+  const tiles = [
+    {
+      label: `FY${DATA.current_fy} total (to date)`,
+      value: fmtMoney(DATA.fy_to_date_total, true),
+      sub: `4 quarters · ${DATA.quarters.slice(-4)[0]}–${DATA.quarters.slice(-1)[0]}`,
+    },
+    {
+      label: 'Trailing 4Q vs. prior 4Q',
+      value: fmtMoney(DATA.trailing4_sum, true),
+      delta: DATA.trailing4_change_pct,
+      deltaLabel: `${fmtPct(DATA.trailing4_change_pct)} vs. prior 4Q (${fmtMoney(DATA.prior4_sum, true)})`,
+    },
+    {
+      label: 'Avg. quarterly COPQ (16Q)',
+      value: fmtMoney(DATA.avg_quarterly, true),
+      sub: '16-quarter average, FY23–FY26',
+    },
+    {
+      label: '16-quarter total COPQ',
+      value: fmtMoney(DATA.grand_total, true),
+      sub: 'Warranty + Rework + Rush Charges',
+    },
+  ];
+  tiles.forEach(t => {
+    const el = document.createElement('div');
+    el.className = 'kpi';
+    let deltaHtml = '';
+    if (t.delta !== undefined){
+      const cls = t.delta > 0 ? 'up-bad' : (t.delta < 0 ? 'down-good' : 'neutral');
+      deltaHtml = `<div class="delta ${cls}">${t.deltaLabel}</div>`;
+    }
+    el.innerHTML = `<div class="label">${t.label}</div><div class="value">${t.value}</div>${deltaHtml}${t.sub ? `<div class="sub">${t.sub}</div>` : ''}`;
+    g.appendChild(el);
+  });
+}
+
+// ---------- legend helper ----------
+function renderLegend(containerId, items){
+  const el = document.getElementById(containerId);
+  el.innerHTML = '';
+  items.forEach(it => {
+    const d = document.createElement('div');
+    d.className = 'legend-item';
+    d.innerHTML = `<span class="legend-sw" style="background:${it.color}"></span>${it.label}`;
+    el.appendChild(d);
+  });
+}
+
+// ---------- Quarterly stacked bar chart ----------
+function renderTrendChart(){
+  const n = state.range;
+  const quarters = DATA.quarters.slice(-n);
+  const startIdx = DATA.quarters.length - n;
+  const cats = ACTIVE_CATS.filter(c => state.activeCats.has(c));
+  renderLegend('trendLegend', ACTIVE_CATS.map(c => ({color: CAT_COLORS[c], label: c})));
+
+  const w = 1200, hgt = 300, padL = 54, padR = 16, padT = 16, padB = 34;
+  const plotW = w - padL - padR, plotH = hgt - padT - padB;
+  const totals = quarters.map((q,i) => cats.reduce((s,c) => s + DATA.category_quarterly[c][startIdx+i], 0));
+  const maxV = Math.max(...totals, 1) * 1.15;
+  const bw = Math.min(40, plotW / quarters.length * 0.5);
+  const slot = plotW / quarters.length;
+
+  let svg = `<svg viewBox="0 0 ${w} ${hgt}" width="100%" height="${hgt}" preserveAspectRatio="xMidYMid meet">`;
+  // gridlines
+  const ticks = 4;
+  for (let t=0; t<=ticks; t++){
+    const v = maxV / ticks * t;
+    const y = padT + plotH - (v/maxV)*plotH;
+    svg += `<line class="grid-line" x1="${padL}" x2="${w-padR}" y1="${y}" y2="${y}"/>`;
+    svg += `<text class="axis-text" x="${padL-8}" y="${y+3}" text-anchor="end">${fmtMoney(v, true)}</text>`;
+  }
+  quarters.forEach((q, i) => {
+    const cx = padL + slot*i + slot/2;
+    let yCursor = padT + plotH;
+    cats.forEach((c, ci) => {
+      const v = DATA.category_quarterly[c][startIdx+i];
+      if (v <= 0) return;
+      const segH = (v/maxV)*plotH;
+      const y = yCursor - segH;
+      const isTop = ci === cats.filter(cc => DATA.category_quarterly[cc][startIdx+i] > 0).length - 1;
+      const rTop = isTop ? 4 : 0;
+      svg += `<path class="bar-seg" data-q="${q}" data-cat="${c}" data-v="${v}"
+        d="M${cx-bw/2},${y+rTop}
+           ${rTop ? `Q${cx-bw/2},${y} ${cx-bw/2+rTop},${y} L${cx+bw/2-rTop},${y} Q${cx+bw/2},${y} ${cx+bw/2},${y+rTop}` : `L${cx-bw/2},${y} L${cx+bw/2},${y}`}
+           L${cx+bw/2},${yCursor-2} L${cx-bw/2},${yCursor-2} Z"
+        fill="${CAT_COLORS[c]}" style="cursor:pointer;"/>`;
+      yCursor -= segH + 2;
+    });
+    // total label above bar
+    const totalY = padT + plotH - (totals[i]/maxV)*plotH;
+    if (totals[i] > 0){
+      svg += `<text class="total-label" x="${cx}" y="${totalY-8}" text-anchor="middle">${fmtMoney(totals[i], true)}</text>`;
+    }
+    svg += `<text class="axis-text" x="${cx}" y="${hgt-padB+18}" text-anchor="middle">${q}</text>`;
+    // invisible hit rect for whole-quarter tooltip
+    svg += `<rect x="${cx-slot/2}" y="${padT}" width="${slot}" height="${plotH}" fill="transparent" class="hit-rect" data-i="${i}" style="cursor:pointer;"/>`;
+  });
+  svg += `</svg>`;
+  const container = document.getElementById('trendChart');
+  container.innerHTML = svg;
+
+  container.querySelectorAll('.hit-rect').forEach(rect => {
+    rect.addEventListener('mousemove', evt => {
+      const i = parseInt(rect.getAttribute('data-i'), 10);
+      const q = quarters[i];
+      let rows = cats.map(c => {
+        const v = DATA.category_quarterly[c][startIdx+i];
+        return v > 0 ? `<div class="t-row"><span style="color:${CAT_COLORS[c]}">●</span>&nbsp;${c}<span class="v">${fmtMoney(v)}</span></div>` : '';
+      }).join('');
+      showTooltip(evt, `<div class="t-title">${q}</div>${rows}<div class="t-row" style="margin-top:4px;border-top:1px solid var(--border);padding-top:4px;"><b>Total</b><span class="v">${fmtMoney(totals[i])}</span></div>`);
+    });
+    rect.addEventListener('mouseleave', hideTooltip);
+  });
+
+  // table
+  const table = document.getElementById('trendTable');
+  let th = '<thead><tr><th>Quarter</th>' + cats.map(c=>`<th>${c}</th>`).join('') + '<th>Total</th></tr></thead>';
+  let tb = '<tbody>' + quarters.map((q,i) => {
+    return `<tr><td>${q}</td>${cats.map(c=>`<td class="num">${fmtMoney(DATA.category_quarterly[c][startIdx+i])}</td>`).join('')}<td class="num"><b>${fmtMoney(totals[i])}</b></td></tr>`;
+  }).join('') + '</tbody>';
+  table.innerHTML = th + tb;
+}
+
+// ---------- YoY grouped bar ----------
+function renderYoyChart(){
+  renderLegend('yoyLegend', [
+    {color:'var(--series-1)', label:'Current fiscal quarter'},
+    {color:'var(--text-muted)', label:'Same quarter, prior year'},
+  ]);
+  const items = DATA.yoy;
+  const w = 560, hgt = 260, padL = 50, padR = 14, padT = 14, padB = 44;
+  const plotW = w - padL - padR, plotH = hgt - padT - padB;
+  const maxV = Math.max(...items.flatMap(d => [d.current, d.prior_year])) * 1.15;
+  const slot = plotW / items.length;
+  const bw = 20, gap = 4;
+
+  let svg = `<svg viewBox="0 0 ${w} ${hgt}" width="100%" height="${hgt}" preserveAspectRatio="xMidYMid meet">`;
+  const ticks = 4;
+  for (let t=0; t<=ticks; t++){
+    const v = maxV/ticks*t;
+    const y = padT + plotH - (v/maxV)*plotH;
+    svg += `<line class="grid-line" x1="${padL}" x2="${w-padR}" y1="${y}" y2="${y}"/>`;
+    svg += `<text class="axis-text" x="${padL-8}" y="${y+3}" text-anchor="end">${fmtMoney(v,true)}</text>`;
+  }
+  items.forEach((d, i) => {
+    const cx = padL + slot*i + slot/2;
+    const curH = (d.current/maxV)*plotH, curY = padT+plotH-curH;
+    const priH = (d.prior_year/maxV)*plotH, priY = padT+plotH-priH;
+    svg += `<rect x="${cx-bw-gap/2}" y="${curY}" width="${bw}" height="${curH}" rx="4" fill="var(--series-1)" class="yoy-bar" data-i="${i}" data-kind="current" style="cursor:pointer;"/>`;
+    svg += `<rect x="${cx+gap/2}" y="${priY}" width="${bw}" height="${priH}" rx="4" fill="var(--text-muted)" class="yoy-bar" data-i="${i}" data-kind="prior" style="cursor:pointer;"/>`;
+    svg += `<text class="axis-text" x="${cx}" y="${hgt-padB+18}" text-anchor="middle">${d.quarter}</text>`;
+    const pctColor = d.pct_change > 0 ? 'var(--status-critical)' : 'var(--status-good)';
+    svg += `<text class="bar-label" x="${cx}" y="${Math.min(curY,priY)-8}" text-anchor="middle" fill="${pctColor}" font-weight="700">${fmtPct(d.pct_change)}</text>`;
+  });
+  svg += `</svg>`;
+  const container = document.getElementById('yoyChart');
+  container.innerHTML = svg;
+  container.querySelectorAll('.yoy-bar').forEach(bar => {
+    bar.addEventListener('mousemove', evt => {
+      const i = parseInt(bar.getAttribute('data-i'),10);
+      const d = items[i];
+      showTooltip(evt, `<div class="t-title">${d.quarter} vs ${d.prior_quarter_label}</div>
+        <div class="t-row">Current<span class="v">${fmtMoney(d.current)}</span></div>
+        <div class="t-row">Prior year<span class="v">${fmtMoney(d.prior_year)}</span></div>
+        <div class="t-row" style="margin-top:4px;border-top:1px solid var(--border);padding-top:4px;">Change<span class="v">${fmtPct(d.pct_change)}</span></div>`);
+    });
+    bar.addEventListener('mouseleave', hideTooltip);
+  });
+  const table = document.getElementById('yoyTable');
+  table.innerHTML = '<thead><tr><th>Quarter</th><th>Current</th><th>Prior year</th><th>Change</th></tr></thead><tbody>' +
+    items.map(d => `<tr><td>${d.quarter}</td><td class="num">${fmtMoney(d.current)}</td><td class="num">${fmtMoney(d.prior_year)}</td><td class="num">${fmtPct(d.pct_change)}</td></tr>`).join('') +
+    '</tbody>';
+}
+
+// ---------- Category mix donut ----------
+function renderMixChart(){
+  const cats = ACTIVE_CATS.filter(c => state.activeCats.has(c));
+  const totalAll = cats.reduce((s,c) => s + DATA.category_totals_all[c], 0);
+  const w = 340, hgt = 260, cx = 130, cy = 130, rOuter = 100, rInner = 62;
+  let angle = -Math.PI/2;
+  let svg = `<svg viewBox="0 0 ${w} ${hgt}" width="100%" height="${hgt}" preserveAspectRatio="xMidYMid meet">`;
+  const segs = [];
+  cats.forEach(c => {
+    const v = DATA.category_totals_all[c];
+    const frac = v/totalAll;
+    const a0 = angle, a1 = angle + frac*2*Math.PI;
+    angle = a1;
+    const midA = (a0+a1)/2;
+    const gapA = 0.012;
+    segs.push({c, v, frac, a0: a0+gapA, a1: a1-gapA});
+  });
+  function arcPath(a0,a1,r0,r1){
+    const x0o = cx+r1*Math.cos(a0), y0o = cy+r1*Math.sin(a0);
+    const x1o = cx+r1*Math.cos(a1), y1o = cy+r1*Math.sin(a1);
+    const x1i = cx+r0*Math.cos(a1), y1i = cy+r0*Math.sin(a1);
+    const x0i = cx+r0*Math.cos(a0), y0i = cy+r0*Math.sin(a0);
+    const large = (a1-a0) > Math.PI ? 1 : 0;
+    return `M${x0o},${y0o} A${r1},${r1} 0 ${large} 1 ${x1o},${y1o} L${x1i},${y1i} A${r0},${r0} 0 ${large} 0 ${x0i},${y0i} Z`;
+  }
+  segs.forEach(s => {
+    svg += `<path d="${arcPath(s.a0,s.a1,rInner,rOuter)}" fill="${CAT_COLORS[s.c]}" class="mix-seg" data-c="${s.c}" style="cursor:pointer;"/>`;
+  });
+  svg += `<text x="${cx}" y="${cy-4}" text-anchor="middle" font-size="18" font-weight="700" fill="var(--text-primary)">${fmtMoney(totalAll,true)}</text>`;
+  svg += `<text x="${cx}" y="${cy+14}" text-anchor="middle" font-size="10.5" fill="var(--text-muted)">total</text>`;
+  // side legend with percentages
+  let ly = 40;
+  cats.forEach(c => {
+    const v = DATA.category_totals_all[c];
+    const pct = (v/totalAll*100).toFixed(1);
+    svg += `<rect x="240" y="${ly}" width="10" height="10" rx="2" fill="${CAT_COLORS[c]}"/>`;
+    svg += `<text x="256" y="${ly+9}" font-size="11" fill="var(--text-secondary)">${c}</text>`;
+    svg += `<text x="256" y="${ly+22}" font-size="12" font-weight="700" fill="var(--text-primary)">${pct}% · ${fmtMoney(v,true)}</text>`;
+    ly += 46;
+  });
+  svg += `</svg>`;
+  const container = document.getElementById('mixChart');
+  container.innerHTML = svg;
+  container.querySelectorAll('.mix-seg').forEach(seg => {
+    seg.addEventListener('mousemove', evt => {
+      const c = seg.getAttribute('data-c');
+      const v = DATA.category_totals_all[c];
+      const pct = (v/totalAll*100).toFixed(1);
+      showTooltip(evt, `<div class="t-title">${c}</div><div class="t-row">Share<span class="v">${pct}%</span></div><div class="t-row">Total<span class="v">${fmtMoney(v)}</span></div>`);
+    });
+    seg.addEventListener('mouseleave', hideTooltip);
+  });
+  const table = document.getElementById('mixTable');
+  table.innerHTML = '<thead><tr><th>Category</th><th>Total (16Q)</th><th>Share</th></tr></thead><tbody>' +
+    cats.map(c => `<tr><td>${c}</td><td class="num">${fmtMoney(DATA.category_totals_all[c])}</td><td class="num">${(DATA.category_totals_all[c]/totalAll*100).toFixed(1)}%</td></tr>`).join('') +
+    '</tbody>';
+}
+
+// ---------- Kill / Bad Debts supplementary line chart ----------
+function renderKillChart(){
+  renderLegend('killLegend', [
+    {color:'var(--status-critical)', label:'Kill charges'},
+    {color:'var(--text-muted)', label:'Bad debts'},
+  ]);
+  const n = state.range;
+  const quarters = DATA.quarters.slice(-n);
+  const startIdx = DATA.quarters.length - n;
+  const kill = DATA.kill_quarterly.slice(startIdx);
+  const bd = DATA.bad_debts_quarterly.slice(startIdx);
+
+  const w = 1200, hgt = 240, padL = 60, padR = 16, padT = 16, padB = 34;
+  const plotW = w - padL - padR, plotH = hgt - padT - padB;
+  const allV = kill.concat(bd);
+  const maxV = Math.max(...allV, 1);
+  const minV = Math.min(...allV, 0);
+  const range = maxV - minV || 1;
+  const slot = plotW / quarters.length;
+  function yOf(v){ return padT + plotH - ((v-minV)/range)*plotH; }
+  const zeroY = yOf(0);
+
+  let svg = `<svg viewBox="0 0 ${w} ${hgt}" width="100%" height="${hgt}" preserveAspectRatio="xMidYMid meet">`;
+  const ticks = 4;
+  for (let t=0; t<=ticks; t++){
+    const v = minV + range/ticks*t;
+    const y = yOf(v);
+    svg += `<line class="grid-line" x1="${padL}" x2="${w-padR}" y1="${y}" y2="${y}"/>`;
+    svg += `<text class="axis-text" x="${padL-8}" y="${y+3}" text-anchor="end">${fmtMoney(v,true)}</text>`;
+  }
+  svg += `<line x1="${padL}" x2="${w-padR}" y1="${zeroY}" y2="${zeroY}" stroke="var(--border-strong)" stroke-width="1"/>`;
+
+  function linePath(vals, color){
+    let d = '';
+    vals.forEach((v,i) => {
+      const cx = padL + slot*i + slot/2;
+      const cy = yOf(v);
+      d += (i===0 ? 'M' : 'L') + cx + ',' + cy + ' ';
+    });
+    return `<path d="${d}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+  }
+  svg += linePath(kill, 'var(--status-critical)');
+  svg += linePath(bd, 'var(--text-muted)');
+  quarters.forEach((q,i) => {
+    const cx = padL + slot*i + slot/2;
+    [{v:kill[i], color:'var(--status-critical)', k:'Kill'}, {v:bd[i], color:'var(--text-muted)', k:'Bad debts'}].forEach(pt => {
+      if (pt.v !== 0){
+        svg += `<circle cx="${cx}" cy="${yOf(pt.v)}" r="4" fill="${pt.color}" stroke="var(--surface-1)" stroke-width="2"/>`;
+      }
+    });
+    svg += `<text class="axis-text" x="${cx}" y="${hgt-padB+18}" text-anchor="middle">${q}</text>`;
+    svg += `<rect x="${cx-slot/2}" y="${padT}" width="${slot}" height="${plotH}" fill="transparent" class="kill-hit" data-i="${i}" style="cursor:pointer;"/>`;
+  });
+  svg += `</svg>`;
+  const container = document.getElementById('killChart');
+  container.innerHTML = svg;
+  container.querySelectorAll('.kill-hit').forEach(rect => {
+    rect.addEventListener('mousemove', evt => {
+      const i = parseInt(rect.getAttribute('data-i'),10);
+      const q = quarters[i];
+      showTooltip(evt, `<div class="t-title">${q}</div>
+        <div class="t-row"><span style="color:var(--status-critical)">●</span>&nbsp;Kill<span class="v">${fmtMoney(kill[i])}</span></div>
+        <div class="t-row"><span style="color:var(--text-muted)">●</span>&nbsp;Bad debts<span class="v">${fmtMoney(bd[i])}</span></div>`);
+    });
+    rect.addEventListener('mouseleave', hideTooltip);
+  });
+
+  // flags (only show ones within current range)
+  const flagsEl = document.getElementById('killFlags');
+  const visibleFlags = DATA.kill_flags.filter(f => quarters.includes(f.quarter));
+  flagsEl.innerHTML = visibleFlags.map(f => `<div class="flag"><span class="icon">⚠</span><span><b>${f.quarter}:</b> Kill charges of ${fmtMoney(f.amount)} — a large one-off swing (Brookfield Properties / Suncor Energy Centre S2/S3 Switchboard Replacement jobs booked then substantially reversed the following quarter). Not part of the official COPQ total.</span></div>`).join('');
+
+  const table = document.getElementById('killTable');
+  table.innerHTML = '<thead><tr><th>Quarter</th><th>Kill</th><th>Bad debts</th></tr></thead><tbody>' +
+    quarters.map((q,i) => `<tr><td>${q}</td><td class="num">${fmtMoney(kill[i])}</td><td class="num">${fmtMoney(bd[i])}</td></tr>`).join('') +
+    '</tbody>';
+}
+
+// ---------- Top clients horizontal bar ----------
+function renderClientsChart(){
+  const items = DATA.top_clients;
+  const w = 600, barH = 24, gap = 10, padL = 190, padR = 70, padT = 6;
+  const hgt = padT + items.length*(barH+gap);
+  const maxV = Math.max(...items.map(d=>d.cost)) * 1.08;
+  const plotW = w - padL - padR;
+  let svg = `<svg viewBox="0 0 ${w} ${hgt}" width="100%" height="${hgt}" preserveAspectRatio="xMidYMid meet">`;
+  items.forEach((d,i) => {
+    const y = padT + i*(barH+gap);
+    const bw = (d.cost/maxV)*plotW;
+    svg += `<text x="${padL-10}" y="${y+barH/2+4}" text-anchor="end" font-size="11.5" fill="var(--text-secondary)">${d.client.length>22?d.client.slice(0,21)+'…':d.client}</text>`;
+    svg += `<rect x="${padL}" y="${y}" width="${Math.max(bw,2)}" height="${barH}" rx="4" fill="var(--series-1)" class="client-bar" data-i="${i}" style="cursor:pointer;"/>`;
+    svg += `<text x="${padL+bw+8}" y="${y+barH/2+4}" font-size="11.5" font-weight="700" fill="var(--text-primary)">${fmtMoney(d.cost,true)}</text>`;
+  });
+  svg += `</svg>`;
+  const container = document.getElementById('clientsChart');
+  container.innerHTML = svg;
+  container.querySelectorAll('.client-bar').forEach(bar => {
+    bar.addEventListener('mousemove', evt => {
+      const i = parseInt(bar.getAttribute('data-i'),10);
+      const d = items[i];
+      showTooltip(evt, `<div class="t-title">${d.client}</div><div class="t-row">Total cost<span class="v">${fmtMoney(d.cost)}</span></div><div class="t-row" style="color:var(--text-muted);font-size:11px;margin-top:2px;">2025-Q1–2026-Q4 detail only</div>`);
+    });
+    bar.addEventListener('mouseleave', hideTooltip);
+  });
+}
+
+function renderJobsTable(){
+  const table = document.getElementById('jobsTable');
+  table.innerHTML = '<thead><tr><th style="text-align:left;">Job</th><th style="text-align:left;">Client</th><th>Cost</th></tr></thead><tbody>' +
+    DATA.top_jobs.map(d => `<tr><td style="text-align:left;">${d.job}</td><td style="text-align:left;color:var(--text-secondary);">${d.client}</td><td class="num">${fmtMoney(d.cost)}</td></tr>`).join('') +
+    '</tbody>';
+}
+
+function renderAll(){
+  renderKPIs();
+  renderTrendChart();
+  renderYoyChart();
+  renderMixChart();
+  renderKillChart();
+  renderClientsChart();
+  renderJobsTable();
+}
+renderAll();
+window.addEventListener('resize', () => { /* SVGs are viewBox-responsive, no rebuild needed */ });
+</script>
+</body>
+</html>
