@@ -440,8 +440,8 @@ function svgEl(tag,attrs){ const e=document.createElementNS(NS,tag); for(const k
 // ---------- theme ----------
 const themeBtn = $('#themeToggle');
 function applyTheme(t){
-  if(t==='dark'){ document.documentElement.setAttribute('data-theme','dark'); themeBtn.textContent='☀️ Light mode'; }
-  else { document.documentElement.setAttribute('data-theme','light'); themeBtn.textContent='🌙 Dark mode'; }
+  if(t==='light'){ document.documentElement.setAttribute('data-theme','light'); themeBtn.textContent='🌙 Dark mode'; }
+  else { document.documentElement.setAttribute('data-theme','dark'); themeBtn.textContent='☀️ Light mode'; }
   localStorage.setItem('ncr-theme', t);
 }
 try{
