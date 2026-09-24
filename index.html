@@ -331,13 +331,6 @@ tbody td.num{text-align:right; font-variant-numeric:tabular-nums; font-weight:60
       </div>
     </div>
 
-    <div class="panel">
-      <div class="panel-head">
-        <div><h2>Supplementary: Kill &amp; Bad Debts</h2><div class="desc">Tracked separately — not part of Total COPQ</div></div>
-      </div>
-      <div class="panel-body" id="killBadDebtPanel"></div>
-    </div>
-
     <div class="grid2b">
       <div class="panel">
         <div class="panel-head">
@@ -368,20 +361,11 @@ tbody td.num{text-align:right; font-variant-numeric:tabular-nums; font-weight:60
 
     <div class="kpi-row" id="kpiRowNCR"></div>
 
-    <div class="grid2">
-      <div class="panel">
-        <div class="panel-head">
-          <div><h2>Cost Driver Mix</h2><div class="desc">All-time total by category (FY19–FY26)</div></div>
-        </div>
-        <div class="scroll-hint" id="mixChartHint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 12h16M4 12l5-5M4 12l5 5M20 12l-5-5M20 12l-5 5"/></svg>Scroll to see full names</div>
-        <div class="panel-body hscroll-x" id="mixChart"></div>
+    <div class="panel">
+      <div class="panel-head">
+        <div><h2>NCR Volume Trend</h2><div class="desc">Distinct NCR jobs opened per quarter (Warranty + Rework MF/FS + Rush + Kill)</div></div>
       </div>
-      <div class="panel">
-        <div class="panel-head">
-          <div><h2>NCR Volume Trend</h2><div class="desc">Distinct NCR jobs opened per quarter (Warranty + Rework MF/FS + Rush + Kill)</div></div>
-        </div>
-        <div class="panel-body" id="ncrCountChart"></div>
-      </div>
+      <div class="panel-body" id="ncrCountChart"></div>
     </div>
 
     <div class="panel">
@@ -621,7 +605,6 @@ function renderKPIsCOPQ(){
     {label:'FY26 vs FY25 (YoY)', val: (yoy>=0?'+':'')+yoy.toFixed(1)+'%', note:'Trailing-4Q vs prior-4Q', cls: yoy>0?'crit':'good', delta:true},
     {label:'Avg Quarterly COPQ', val: fmtK(avgQuarterly), note:'Across all 32 tracked quarters', cls:''},
     {label:'Top Category', val:'Rework MF', note: fmtK(fy.reduce((s,r)=>s+r['Rework MF'],0))+' all-time · 70% of total', cls:'crit'},
-    {label:'Kill (net, all-time)', val: fmt$(fy.reduce((s,r)=>s+r.Kill,0)), note:'Supplementary — excluded from Total COPQ', cls:'warn'},
   ];
   paintKPIs('#kpiRowCOPQ', kpis, yoy);
 }
@@ -1526,12 +1509,10 @@ function renderAll(){
   renderYoY();
   renderMixTrend();
   renderFY();
-  renderKillBadDebt();
   renderClientsCondensed();
   renderJobsCondensed();
   // NCR tab
   renderKPIsNCR();
-  renderMix();
   renderNcrCount();
   renderPareto();
   renderClients();
