@@ -368,6 +368,14 @@ tbody td.num{text-align:right; font-variant-numeric:tabular-nums; font-weight:60
 
     <div class="kpi-row" id="kpiRowNCR"></div>
 
+    <div class="grid2">
+      <div class="panel">
+        <div class="panel-head">
+          <div><h2>Cost Driver Mix</h2><div class="desc">All-time total by category (FY19–FY26)</div></div>
+        </div>
+        <div class="scroll-hint" id="mixChartHint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 12h16M4 12l5-5M4 12l5 5M20 12l-5-5M20 12l-5 5"/></svg>Scroll to see full names</div>
+        <div class="panel-body hscroll-x" id="mixChart"></div>
+      </div>
       <div class="panel">
         <div class="panel-head">
           <div><h2>NCR Volume Trend</h2><div class="desc">Distinct NCR jobs opened per quarter (Warranty + Rework MF/FS + Rush + Kill)</div></div>
@@ -393,17 +401,16 @@ tbody td.num{text-align:right; font-variant-numeric:tabular-nums; font-weight:60
         <div class="scroll-hint" id="clientsChartHint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 12h16M4 12l5-5M4 12l5 5M20 12l-5-5M20 12l-5 5"/></svg>Scroll to see full names</div>
         <div class="panel-body hscroll-x" id="clientsChart"></div>
       </div>
+      <div class="panel">
+        <div class="panel-head"><div><h2>Top Cost-Driving Resources</h2><div class="desc">Labor lines only · top 12 of 548</div></div></div>
+        <div class="scroll-hint" id="resourcesChartHint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 12h16M4 12l5-5M4 12l5 5M20 12l-5-5M20 12l-5 5"/></svg>Scroll to see full names</div>
+        <div class="panel-body hscroll-x" id="resourcesChart"></div>
+      </div>
+    </div>
 
     <div class="panel">
       <div class="panel-head"><div><h2>NCR Root Cause Analysis</h2><div class="desc">Pareto of Offenders &middot; each NCR's investigation note read and classified individually, Oct 2023&ndash;2026</div></div></div>
       <div class="panel-body">
-        <div class="banner compact">
-          <div class="ico">&#9432;</div>
-          <div>
-            <b>Method &amp; coverage:</b> every NCR's actual investigation note (not just its department tag) was read individually from the 3 NCR Tracking workbooks' <b>NCR List</b> sheets (Oct 2023&ndash;2026) and classified into a root-cause category, each backed by a direct quote from the note &mdash; hover a bar for examples. This is a separate, narrower log than the NAV cost ledger above (which goes back to FY2019), so counts here won't match the NCR counts elsewhere in this dashboard.
-            <span id="rootCauseCoverageNote"></span>
-          </div>
-        </div>
         <div class="stat-strip" id="rootCauseStats" style="margin-bottom:16px;"></div>
         <div class="scroll-hint" id="rootCauseChartHint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 12h16M4 12l5-5M4 12l5 5M20 12l-5-5M20 12l-5 5"/></svg>Scroll to see full names</div>
         <div id="rootCauseChart"></div>
@@ -444,9 +451,6 @@ tbody td.num{text-align:right; font-variant-numeric:tabular-nums; font-weight:60
     <div class="panel">
       <div class="panel-head"><div><h2>Paint Vendor Performance</h2><div class="desc">Rite-Way Powder Coating &middot; J.I.T. Powder Coaters &middot; Arka Mfg &amp; Distr. Services</div></div></div>
       <div class="panel-body">
-        <div class="banner compact">
-          <div class="ico">&#9432;</div>
-        </div>
         <div class="stat-strip" id="paintVendorStats" style="margin-bottom:16px;"></div>
       </div>
     </div>
@@ -469,6 +473,7 @@ tbody td.num{text-align:right; font-variant-numeric:tabular-nums; font-weight:60
     </div>
 
   </div>
+
 
 </div>
 
