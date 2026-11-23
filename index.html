@@ -298,7 +298,7 @@ td.rcl-desc{white-space:normal; min-width:300px; max-width:360px; color:var(--te
 <div class="topbar">
   <div>
     <h1>Quality Dashboard</h1>
-    <div class="sub">REV Engineering &nbsp;·&nbsp; FY2019 – FY2027 &nbsp;·&nbsp; data as of Nov 18, 2026 </div>
+    <div class="sub">REV Engineering &nbsp;·&nbsp; FY2019 – FY2027 &nbsp;·&nbsp; data as of Oct 22, 2026 </div>
   </div>
   <div class="topbar-right">
     <button class="theme-toggle" id="themeToggle">🌙 Dark mode</button>
@@ -1376,7 +1376,7 @@ function renderRootCause(){
 
   const container = $('#rootCauseChart'); container.innerHTML='';
 
-  const colW = 150, padTop = 34, padBottom = 62, padL = 54, padR = 54, plotH = 320;
+  const colW = 84, padTop = 34, padBottom = 62, padL = 54, padR = 54, plotH = 320;
   const plotWmin = cats.length*colW;
   const containerW = contentWidth(container) || 900;
   const plotW = Math.max(plotWmin, containerW - padL - padR);
@@ -1394,6 +1394,7 @@ function renderRootCause(){
   container.appendChild(scrollWrap);
   const svg = svgEl('svg',{width:W,height:H2,viewBox:`0 0 ${W} ${H2}`});
   scrollWrap.appendChild(svg);
+  const _h=$('#rootCauseChartHint'); if(_h) _h.style.display = (W > containerW+2) ? '' : 'none';
 
   // gridlines + left (count) axis ticks
   const ticks = 4;
